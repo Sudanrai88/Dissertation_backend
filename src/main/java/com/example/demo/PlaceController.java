@@ -2,27 +2,30 @@ package com.example.demo;
 
 import com.example.demo.model.Places;
 import org.springframework.http.*;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import javax.swing.*;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api")
 public class PlaceController {
+    @CrossOrigin(origins = "http://localhost:3000")
     @GetMapping("/search")
     public ResponseEntity<List<Places>> searchPlaces(@RequestParam("text") String locationText, @RequestParam("longitude") double longitude, @RequestParam("latitude") double latitude,
                                                      @RequestParam("Cost") int costScore, @RequestParam("accessibility") int accessibilityScore, @RequestParam("popularity") int popularityScore,
-                                                     @RequestParam("ArrayOfPlaces") String arrayOfPlaces, @RequestParam("radius") int radius) {
+                                                     @RequestParam("ArrayOfPlaces") ArrayList<String> arrayOfPlaces, @RequestParam("radius") int radius) {
         // Handle the search request
         //nearby search
         //Only 1 type is allowed, possibly running N number of GET requests may be needed to collect a certain amount of destinations?
         RestTemplate restTemplate = new RestTemplate();
+
+        HashMap<String, List<String>> GroupToPlace = new HashMap<>();
+        List<String> foodArray1 = Arrays.asList("cafe", "bar", "bakery", "restaurant");
+        GroupToPlace.put("Food", foodArray1);
+
+        String groupType1 = GroupToPlace.get(arrayOfPlaces.get(0)).get(0);
 
         String url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=" + latitude +
                 "," + //cool, was %2C, java transforms % into %252C (Look into it, HTML url Encoding)
@@ -30,7 +33,7 @@ public class PlaceController {
                 "&radius=" +
                 radius +
                 "&type=" +
-                arrayOfPlaces +
+                groupType1 +
                 "&key=" +
                 SuperSecretApiKey.getApiKey();
 
@@ -45,7 +48,6 @@ public class PlaceController {
             String responseBody = response.getBody();
             System.out.println(responseBody);
             // Process the response body as needed
-
         } else {
             // Handle error cases
         }

@@ -9,6 +9,7 @@ public class Place {
     private String imagesRef;
     private double rating;
     private int rating_amount;
+    private int price;
 
 
     public String getName() {
@@ -86,6 +87,16 @@ public class Place {
                 ", imagesRef='" + imagesRef + '\'' +
                 ", rating=" + rating +
                 ", rating_amount=" + rating_amount +
+                ", price_level=" + price +
                 '}';
     }
+
+    public int getPrice() {
+        return price;
+    }
+
+    public void setPrice(int price) {
+        this.price = price;
+    }
+
 }

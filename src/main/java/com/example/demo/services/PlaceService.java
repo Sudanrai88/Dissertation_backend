@@ -1,5 +1,6 @@
-package com.example.demo;
+package com.example.demo.services;
 
+import com.example.demo.SuperSecretApiKey;
 import com.example.demo.model.Place;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -48,6 +49,7 @@ public class PlaceService {
                     do {
                         ResponseEntity<String> response = makeApiRequest(url);
                         responseBody = response.getBody();
+                        System.out.println(responseBody);
 
                         if (response.getStatusCode() == HttpStatus.OK) {
                             JsonNode root;
@@ -72,6 +74,12 @@ public class PlaceService {
                                         businessStatus = "";
                                     }
 
+                                    int price_level;
+                                    if (resultNode.has("price_level")) {
+                                        price_level = resultNode.get("price_level").asInt();
+                                    } else {
+                                        price_level = 0;
+                                    }
 
                                     String name = resultNode.get("name").asText();
                                     String placeId = resultNode.get("place_id").asText();
@@ -79,7 +87,6 @@ public class PlaceService {
                                     String placeLongitude = resultNode.get("geometry").get("location").get("lng").asText();
 
                                     String imagesRef = "";
-
                                     if (resultNode.has("photos")) {
                                         JsonNode photosNode = resultNode.get("photos");
                                         if (photosNode.isArray() && photosNode.size() > 0) {
@@ -100,6 +107,7 @@ public class PlaceService {
                                     place.setImages(imagesRef);
                                     place.setRating(rating);
                                     place.setRating_amount(userRatings);
+                                    place.setPrice(price_level);
 
                                     // Add the place to the list
                                     places.add(place);
@@ -110,7 +118,7 @@ public class PlaceService {
                                 String nextPageToken = root.get("next_page_token").asText();
                                 // Wait for the token to become valid
                                 try {
-                                    TimeUnit.SECONDS.sleep(2);
+                                    TimeUnit.SECONDS.sleep(1);
                                 } catch (InterruptedException e) {
                                     e.printStackTrace();
                                 }

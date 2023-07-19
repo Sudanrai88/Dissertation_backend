@@ -31,3 +31,6 @@ build/
 
 ### VS Code ###
 .vscode/
+/src/main/resources/serviceAccount.json
+/src/main/java/com/example/demo/SuperSecretApiKey.java
+/src/main/java/com/example/demo/model/TokenVerificationRequest.java

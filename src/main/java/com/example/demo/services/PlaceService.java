@@ -22,8 +22,8 @@ public class PlaceService {
         this.objectMapper = objectMapper;
     }
 
-    public List<Place> fetchAllPlaces(double latitude, double longitude, int radius, ArrayList<String> arrayOfPlaces) {
-        List<Place> places = new ArrayList<>();
+    public ArrayList<Place> fetchAllPlaces(double latitude, double longitude, int radius, ArrayList<String> arrayOfPlaces) {
+        ArrayList<Place> places = new ArrayList<>();
 
         HashMap<String, List<String>> groupToPlace = new HashMap<>();
         groupToPlace.put("Food", Arrays.asList("cafe", "bar", "bakery", "restaurant"));
@@ -83,8 +83,8 @@ public class PlaceService {
 
                                     String name = resultNode.get("name").asText();
                                     String placeId = resultNode.get("place_id").asText();
-                                    String placeLatitude = resultNode.get("geometry").get("location").get("lat").asText();
-                                    String placeLongitude = resultNode.get("geometry").get("location").get("lng").asText();
+                                    Double placeLatitude = resultNode.get("geometry").get("location").get("lat").asDouble();
+                                    Double placeLongitude = resultNode.get("geometry").get("location").get("lng").asDouble();
 
                                     String imagesRef = "";
                                     if (resultNode.has("photos")) {
@@ -97,6 +97,11 @@ public class PlaceService {
                                     double rating = resultNode.has("rating") ? resultNode.get("rating").asDouble() : 0;
                                     int userRatings = resultNode.has("user_ratings_total") ? resultNode.get("user_ratings_total").asInt() : 0;
 
+                                    ArrayList<String> typeOfPlace = new ArrayList<>();
+                                    for (int i = 0; i < resultNode.get("types").size() ; i++) {
+                                        typeOfPlace.add(resultNode.get("types").get(i).asText());
+                                    }
+
                                     // Create a new Place object and set its properties
                                     Place place = new Place();
                                     place.setBusinessStatus(businessStatus);
@@ -108,6 +113,7 @@ public class PlaceService {
                                     place.setRating(rating);
                                     place.setRating_amount(userRatings);
                                     place.setPrice(price_level);
+                                    place.setPlaceTypes(typeOfPlace);
 
                                     // Add the place to the list
                                     places.add(place);

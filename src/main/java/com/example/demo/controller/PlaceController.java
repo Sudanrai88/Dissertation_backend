@@ -2,7 +2,8 @@ package com.example.demo.controller;
 
 import com.example.demo.model.Place;
 import com.example.demo.model.User;
-import com.example.demo.services.Algorithms;
+import com.example.demo.services.Algorithms.Algorithms;
+import com.example.demo.services.Algorithms.Coordinate;
 import com.example.demo.services.PlaceService;
 import com.example.demo.services.UserManagementService;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -36,7 +37,7 @@ public class PlaceController {
                                                     @RequestParam("Cost") int costScore, @RequestParam("accessibility") int accessibilityScore, @RequestParam("popularity") int popularityScore,
                                                     @RequestParam("ArrayOfPlaces") ArrayList<String> arrayOfPlaces, @RequestParam("radius") int radius) throws JsonProcessingException, ExecutionException, InterruptedException, FirebaseAuthException {
 
-        List<Place> places = placeService.fetchAllPlaces(latitude, longitude, radius, arrayOfPlaces);
+        ArrayList<Place> places = placeService.fetchAllPlaces(latitude, longitude, radius, arrayOfPlaces);
         //Create the algorithms to sort out the data and give each place a fitness score depending on the objective functions.
         List<Place> top5Places = algorithms.top5(places);
         System.out.println(top5Places);
@@ -44,6 +45,13 @@ public class PlaceController {
         FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(JWT);
         User user = new User();
         user.setUid(decodedToken.getUid());
+        Coordinate currentLocation = new Coordinate(latitude, longitude);
+
+        System.out.println("HERE");
+        algorithms.geneticAlgorithm(places, radius, currentLocation);
+        System.out.println("HERE");
+
+
         for (Place place:top5Places) {
             algorithms.saveItineraries(user, place, locationText, place.getName());
         }
@@ -56,6 +64,8 @@ public class PlaceController {
         } else {
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         }
+
+
     }
 }
 

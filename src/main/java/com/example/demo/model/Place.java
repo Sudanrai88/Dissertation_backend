@@ -1,16 +1,37 @@
 package com.example.demo.model;
 
+import java.util.ArrayList;
+
+//Gene
+
 public class Place {
     private String businessStatus;
     private String name;
     private String placeId;
-    private String longitude;
-    private String latitude;
+    private double longitude;
+    private double latitude;
     private String imagesRef;
+    private ArrayList<String> placeTypes;
     private double rating;
     private int rating_amount;
     private int price;
 
+    public Place(String businessStatus, String name, String placeId, double longitude, double latitude, String imagesRef, ArrayList<String> placeTypes, double rating, int rating_amount, int price) {
+        this.businessStatus = businessStatus;
+        this.name = name;
+        this.placeId = placeId;
+        this.longitude = longitude;
+        this.latitude = latitude;
+        this.imagesRef = imagesRef;
+        this.placeTypes = placeTypes;
+        this.rating = rating;
+        this.rating_amount = rating_amount;
+        this.price = price;
+    }
+
+    public Place() {
+
+    }
 
     public String getName() {
         return name;
@@ -28,19 +49,19 @@ public class Place {
         this.placeId = placeId;
     }
 
-    public String getLongitude() {
+    public double getLongitude() {
         return longitude;
     }
 
-    public void setLongitude(String longitude) {
+    public void setLongitude(double longitude) {
         this.longitude = longitude;
     }
 
-    public String getLatitude() {
+    public double getLatitude() {
         return latitude;
     }
 
-    public void setLatitude(String latitude) {
+    public void setLatitude(double latitude) {
         this.latitude = latitude;
     }
 
@@ -76,6 +97,22 @@ public class Place {
         this.businessStatus = businessStatus;
     }
 
+    public String getImagesRef() {
+        return imagesRef;
+    }
+
+    public void setImagesRef(String imagesRef) {
+        this.imagesRef = imagesRef;
+    }
+
+    public ArrayList<String> getPlaceTypes() {
+        return placeTypes;
+    }
+
+    public void setPlaceTypes(ArrayList<String> placeTypes) {
+        this.placeTypes = placeTypes;
+    }
+
     @Override
     public String toString() {
         return "Place{" +
@@ -88,6 +125,7 @@ public class Place {
                 ", rating=" + rating +
                 ", rating_amount=" + rating_amount +
                 ", price_level=" + price +
+                ", placeTypes=" + placeTypes +
                 '}';
     }
 

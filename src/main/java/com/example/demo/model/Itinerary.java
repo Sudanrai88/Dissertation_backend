@@ -2,6 +2,7 @@ package com.example.demo.model;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 //Chromosome
 
@@ -31,6 +32,9 @@ public class Itinerary {
         normalizedScoreList.add(normalizedAccessibilityScore);
 
         return normalizedScoreList;
+    }
+
+    public Itinerary() {
     }
 
     public void setCurrentScore(ArrayList<Double> currentScore) {
@@ -130,20 +134,35 @@ public class Itinerary {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Itinerary itinerary = (Itinerary) o;
+        return getPopularityScore() == itinerary.getPopularityScore() &&
+                getCostScore() == itinerary.getCostScore() &&
+                getAccessibilityScore() == itinerary.getAccessibilityScore();
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getPopularityScore(), getCostScore(), getAccessibilityScore());
+    }
+
+    @Override
     public String toString() {
-        return "Itinerary{" +
-                "listOfDestinations=" + listOfDestinations +
-                ", currentScore=" + currentScore +
-                ", idList=" + idList +
-                ", itineraryId='" + itineraryId + '\'' +
-                ", rank=" + rank +
-                ", crowdingDistance=" + crowdingDistance +
-                ", popularityScore=" + popularityScore +
-                ", accessibilityScore=" + accessibilityScore +
-                ", costScore=" + costScore +
-                ", normalizedPopularityScore=" + normalizedPopularityScore +
-                ", normalizedAccessibilityScore=" + normalizedAccessibilityScore +
-                ", normalizedCostScore=" + normalizedCostScore +
+        return "Itinerary{\n" +
+                "listOfDestinations=" + listOfDestinations + ",\n" +
+                "currentScore=" + currentScore + ",\n" +
+                "idList=" + idList + ",\n" +
+                "itineraryId='" + itineraryId + '\'' + ",\n" +
+                "rank=" + rank + ",\n" +
+                "crowdingDistance=" + crowdingDistance + ",\n" +
+                "popularityScore=" + popularityScore + ",\n" +
+                "accessibilityScore=" + accessibilityScore + ",\n" +
+                "costScore=" + costScore + ",\n" +
+                "normalizedPopularityScore=" + normalizedPopularityScore + ",\n" +
+                "normalizedAccessibilityScore=" + normalizedAccessibilityScore + ",\n" +
+                "normalizedCostScore=" + normalizedCostScore + "\n" +
                 '}';
     }
 }

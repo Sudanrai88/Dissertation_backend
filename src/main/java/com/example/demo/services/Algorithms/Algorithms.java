@@ -11,6 +11,7 @@ import com.google.cloud.firestore.WriteResult;
 import com.google.firebase.cloud.FirestoreClient;
 import org.springframework.stereotype.Service;
 
+import java.lang.reflect.Array;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
@@ -19,7 +20,7 @@ import static com.example.demo.services.Algorithms.shortestPath.findShortestTota
 
 @Service
 public class Algorithms {
-    public ArrayList<Itinerary> geneticAlgorithm(ArrayList<Place> places, int radius, Coordinate currentLocation) {
+    public List<Itinerary> geneticAlgorithm(ArrayList<Place> places, int radius, Coordinate currentLocation) {
 
         //proceed with scoredDestination places
         //perform genetic algorithm steps
@@ -39,6 +40,7 @@ public class Algorithms {
 
         //Remove any destination with a closed businessStatus
         places.removeIf(place -> "CLOSED".equals(place.getBusinessStatus()));
+        places.removeIf(place -> "CLOSED_TEMPORARILY".equals(place.getBusinessStatus()));
 
 
         //priceLevel per chosen placeType, filter places and choose by place-type. filter that placeTypeGroup by priceLevel > 0. Average priceLevel for all leftover. That is the averagePriceLevel.
@@ -72,66 +74,117 @@ public class Algorithms {
 
         //INITIALIZE POPULATION
         Population Population = new Population();
-        initilizePopulation(places, Population, maxPopulation, itineraryLength);
+        initializePopulation(places, Population, maxPopulation, itineraryLength);
 
-        //START GENERATIONAL LOOP
-        while (generationalLoop <= 1) {
+        //START GENERATIONAL LOOP, Stop after x generations or in the future when hyperVolume is not reducing.
+        while (generationalLoop <= 5) {
+            //Run objective functions on all destinations of each population. Tracks placeID for each destination in the Population.
+            if (generationalLoop == 0) {
+                runObjectiveFunctions(Population.getItineraries(), currentLocation, itineraryLength);
+                //Non-dominated sorting + crowding distance --used a library
+                geneticAlgoHelper.updatePopulationFitness(Population.getItineraries());
+            }
+
+            System.out.println("This is generation: " + generationalLoop);
+
             generationalLoop++;
 
-            //Run objective functions on all destinations of each population. Tracks placeID for each destination in the Population.
+            ArrayList<Itinerary> offSpring = new ArrayList<>();
+
+            while(offSpring.size() < Population.getItineraries().size()) {
+                ArrayList<Itinerary> tempOffSprings = new ArrayList<>();
+
+                //Get Parents
+                Itinerary father = GetParent(Population);
+                Itinerary mother = GetParent(Population);
+
+                while (mother == father)
+                {
+                    father = GetParent(Population);
+                }
+
+                //Perform Crossover
+
+                tempOffSprings.add(GetOffspring(father,mother).get(0));
+                tempOffSprings.add(GetOffspring(father,mother).get(1));
+
+                //Mutate
+                Mutate(tempOffSprings.get(0), places);
+                Mutate(tempOffSprings.get(1), places);
+
+                //Add offSpring to the population
+                offSpring.add(tempOffSprings.get(0));
+                offSpring.add(tempOffSprings.get(1));
+            }
+
+            Population.getItineraries().addAll(offSpring);
             runObjectiveFunctions(Population.getItineraries(), currentLocation, itineraryLength);
 
-            /*System.out.println("currentPopulation:");
-            for (int i = 0; i < Population.getItineraries().size(); i++) {
-                System.out.println("Population with placeIds (Value): " + Population.getItineraries().get(i).getIdList() + ", Scores (Key): " + Population.getItineraries().get(i).getCurrentScore());
-            }*/
+            geneticAlgoHelper.updatePopulationFitness(Population.getItineraries());
 
-            //Non-dominated sorting + crowding distance --used a library
-            DominanceComparator.updatePopulationFitness(Population.getItineraries());
+            List<Itinerary> newPopulation;
 
-            //Sort by rank and then crowding distance
             Population.getItineraries().sort(Comparator
                     .comparing(Itinerary::getRank)
                     .thenComparing(Itinerary::getCrowdingDistance, Comparator.reverseOrder()));
 
-            Population newPopulation = new Population();
+            newPopulation = new ArrayList<>(Population.getItineraries().subList(0, maxPopulation));
 
-            for (Itinerary itinerary : Population.getItineraries()) {
-                if (!newPopulation.getItineraries().contains(itinerary)) {
-                    newPopulation.addItinerary(itinerary);
-                }
+            Population.getItineraries().clear();
+
+            for (Itinerary itinerary: newPopulation) {
+                Population.addItinerary(itinerary);
             }
 
-            for (int i = 0; i < newPopulation.getItineraries().size(); i++) {
-                System.out.println("Rank: " + newPopulation.getItineraries().get(i).getRank() + " normalized values: " + newPopulation.getItineraries().get(i).getNormalizedScoreList() + " //Crowding distance: " + newPopulation.getItineraries().get(i).getCrowdingDistance());
+
+
+            for (int i = 0; i < 5; i++) {
+                System.out.println("Rank: " + Population.getItineraries().get(i).getRank() + " normalized values: " + Population.getItineraries().get(i).getNormalizedScoreList() + " //Crowding distance: " + Population.getItineraries().get(i).getCrowdingDistance());
             }
 
-            System.out.println(newPopulation.getItineraries().size());
-
-            //The new population is organised from strongest to weakest 'Parents'
-
-            //selection --tournament
-
-
-
-            //crossover
-
-            //mutation (small mutation)
-
+            System.out.println(Population.getItineraries().get(0).toString());
             //testing (unit testing), problem instances (Sudan visits etc etc)
 
-
-
         }
-
         //testing (unit testing), problem instances (Sudan visits etc etc)
-        return Population.getItineraries();
+        //With the final list of itineraries, gravitate towards the users choice. E.g. put a weighting through
+
+        System.out.println("Nice");
+        return Population.getItineraries().subList(0,5);
     }
 
 
+    private Itinerary GetParent(Population population) {
+        ArrayList<Itinerary> candidates = geneticAlgoHelper.GetCandidateParents(population.getItineraries());
+        Itinerary Candidate1 = candidates.get(0);
+        Itinerary Candidate2 = candidates.get(1);
 
+        return geneticAlgoHelper.TournamentSelection(Candidate1, Candidate2);
+    }
 
-    public void initilizePopulation (ArrayList<Place> places, Population population, int maxPopulation, int itineraryLength) {
+    private ArrayList<Itinerary> GetOffspring(Itinerary itineraryA, Itinerary itineraryB) {
+
+        ArrayList<Itinerary> offSprings = new ArrayList<>();
+        // Generate the offspring from our selected parents
+        Itinerary offspringA = DoCrossover(itineraryA, itineraryB);
+        Itinerary offspringB = DoCrossover(itineraryB, itineraryA);
+
+        offSprings.add(offspringA);
+        offSprings.add(offspringB);
+
+        return offSprings;
+    }
+
+    private Itinerary DoCrossover(Itinerary itineraryA, Itinerary itineraryB) {
+        return geneticAlgoHelper.doCrossover(itineraryA, itineraryB, -1);
+    }
+
+    private Itinerary Mutate(Itinerary itinerary, ArrayList<Place> places) {
+        return geneticAlgoHelper.mutate(itinerary, places);
+    }
+
+    //CONSTRAINT THAT 3 Itineraries has to be from user group type selection 1, and 2 from user group type selection 2. E.g. selection 1: Food, selection 2: Artistic. 3/5 itineraries from Food, 2/5 from Artistic.
+    public void initializePopulation (ArrayList<Place> places, Population population, int maxPopulation, int itineraryLength) {
         for (int i = 0; i < maxPopulation; i++) {
             Collections.shuffle(places);
             ArrayList<Place> shuffledList = new ArrayList<>(places.subList(0, itineraryLength));
@@ -139,7 +192,9 @@ public class Algorithms {
             itinerary.setListOfDestinations(shuffledList);
             itinerary.setItineraryId("Itinerary: " + i);
             population.addItinerary(itinerary);
+/*
             System.out.println("//Name = " + population.getItineraries().get(i).getItineraryId() + " //Itinerary in population: " + population.getItineraries().get(i).getListOfDestinations());
+*/
         }
     }
 
@@ -241,21 +296,42 @@ public class Algorithms {
         return totalAveragePrice;
     }
 
-
-
-    private static final String COLLECTION_NAME = "itineraries";
-
-    public String saveItineraries(User user, Place place, String itineraryName, String destinationName) throws ExecutionException, InterruptedException {
-
+    public List<String> saveItineraries(User user, List<Itinerary> itineraries) throws ExecutionException, InterruptedException {
         Firestore dbFirestore = FirestoreClient.getFirestore();
+        List<String> timestamps = new ArrayList<>();
 
-        ApiFuture<WriteResult> collectionApiFuture = dbFirestore.collection(COLLECTION_NAME).document(user.getUid())
-                .collection(itineraryName)
-                .document("Destination: " + destinationName)
-                .set(place);
+        int i = 0;
+        for (Itinerary itinerary : itineraries) {
+            i++;
+            String itineraryName = "Itinerary: " + i;
 
-        return collectionApiFuture.get().getUpdateTime().toString();
+            // Save each itinerary as a document under the "itineraries" sub-collection.
+            dbFirestore.collection("users").document(user.getUid())
+                    .collection("itineraries").document(itineraryName)
+                    .set(itinerary);
+
+            // Save each place as a document under the "places" sub-collection of the itinerary.
+            for (Place place : itinerary.getListOfDestinations()) {
+                String destinationName = place.getName();
+                ApiFuture<WriteResult> collectionApiFuture = dbFirestore.collection("users").document(user.getUid())
+                        .collection("tempItineraries").document(itineraryName)
+                        .collection("Destination List").document("Destination: " + destinationName)
+                        .set(place);
+
+                timestamps.add(collectionApiFuture.get().getUpdateTime().toString());
+            }
+        }
+
+        return timestamps;
     }
+
+
+
+
+
+
+
+
 
 
 }

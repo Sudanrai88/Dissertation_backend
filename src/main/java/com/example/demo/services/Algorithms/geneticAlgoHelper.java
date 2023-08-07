@@ -2,6 +2,7 @@ package com.example.demo.services.Algorithms;
 
 
 import com.example.demo.model.Itinerary;
+import com.example.demo.model.Place;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.apache.commons.math3.util.Pair;
 
@@ -9,7 +10,9 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 
-public class DominanceComparator {
+public class geneticAlgoHelper {
+
+    private static Random random = new Random();
 
     public static void updatePopulationFitness(ArrayList<Itinerary> population) {
         // Clear the existing ranks and crowding distances
@@ -24,6 +27,7 @@ public class DominanceComparator {
 
         // Put every individual in the population into their fronts
         int rank = 1;
+
         while (!remainingToBeRanked.isEmpty()) {
             ArrayList<Itinerary> itinerariesInRank = new ArrayList<>();
 
@@ -89,9 +93,6 @@ public class DominanceComparator {
             intToDistance.put(i, listOfDistances);
         }
 
-        /*for (int i = 0; i < intToDistance.size(); i++) {
-            System.out.println("Key: " + i + intToDistance.get(i));
-        }*/
 
         Double maxDistance = intToDistance.values()
                 .stream()
@@ -106,9 +107,6 @@ public class DominanceComparator {
             }
         }
 
-        /*for (int i = 0; i < intToDistance.size(); i++) {
-            System.out.println("Key: " + i + intToDistance.get(i));
-        }*/
 
         for (int i = 0; i < itinerariesInFront; i++) {
             List<Double> distances = intToDistance.get(i);
@@ -122,8 +120,6 @@ public class DominanceComparator {
             double closest3 = smallestThree.stream()
                     .mapToDouble(Double::doubleValue)
                     .sum();
-
-            System.out.println(closest3);
 
             orderedItineraries.get(i).setCrowdingDistance(closest3/3);
         }
@@ -200,16 +196,142 @@ public class DominanceComparator {
             if (individualA.equals(individualB)) {
                 continue;
             }
+
             // If this individual is at least better than us in one objective and equal in another,
             // then we are dominated by this individual
             if (individualB.getPopularityScore() <= individualA.getPopularityScore() &&
                     individualB.getCostScore() <= individualA.getCostScore() &&
                     individualB.getAccessibilityScore() <= individualA.getAccessibilityScore()) {
+
+                // A log to understand which object dominates and why
+                /*System.out.println("Individual A [Popularity Score: " + individualA.getPopularityScore()
+                        + ", Cost Score: " + individualA.getCostScore() + ", Accessibility Score: "
+                        + individualA.getAccessibilityScore() + "] is dominated by Individual B [Popularity Score: "
+                        + individualB.getPopularityScore() + ", Cost Score: " + individualB.getCostScore()
+                        + ", Accessibility Score: " + individualB.getAccessibilityScore() + "].");*/
+
                 return false;
             }
         }
 
+        // Add a log to know when an individual is not dominated
+        /*System.out.println("Individual A [Popularity Score: " + individualA.getPopularityScore()
+                + ", Cost Score: " + individualA.getCostScore() + ", Accessibility Score: "
+                + individualA.getAccessibilityScore() + "] is not dominated by any other individual.");*/
+
         return true;
+    }
+
+    public static ArrayList<Itinerary> GetCandidateParents(ArrayList<Itinerary> population)
+    {
+        ArrayList<Itinerary> pairedCandidates = new ArrayList<>();
+        // Grab two random individuals from the population
+        Itinerary candidateA = population.get(random.nextInt(population.size()));
+        Itinerary candidateB = population.get(random.nextInt(population.size()));
+
+        // Ensure that the two individuals are unique
+        while (candidateA == candidateB)
+        {
+            candidateB = population.get(random.nextInt(population.size()));
+        }
+
+        pairedCandidates.add(candidateA);
+        pairedCandidates.add(candidateB);
+
+        return pairedCandidates;
+    }
+
+    public static Itinerary TournamentSelection(Itinerary candidate1, Itinerary candidate2) {
+// Return the individual that has the higher fitness value
+        if (candidate1.getRank() < candidate2.getRank())
+        {
+            return candidate1;
+        }
+        else if (candidate1.getRank() == candidate2.getRank())
+        {
+            return candidate1.getCrowdingDistance() > candidate2.getCrowdingDistance()
+                    ? candidate1
+                    : candidate2;
+        }
+        else
+        {
+            return candidate2;
+        }
+    }
+
+    public static Itinerary doCrossover(Itinerary itineraryA, Itinerary itineraryB, int crossoverPosition) {
+        Random random = new Random();
+        // Find the minimum size between both itineraries
+        int minSize = Math.min(itineraryA.getListOfDestinations().size(), itineraryB.getListOfDestinations().size());
+
+        // Generate a number between 1 and minSize - 1 to be our crossover position
+        crossoverPosition = crossoverPosition == -1
+                ? random.nextInt(minSize - 1) + 1
+                : crossoverPosition;
+
+        // Grab the head from the first individual
+        ArrayList<Place> offspringSequence = new ArrayList<>(itineraryA.getListOfDestinations().subList(0, crossoverPosition));
+
+        // Create a hash for quicker 'exists in head' checks
+        Set<Place> appeared = new HashSet<>(offspringSequence);
+
+        // Append individualB to the head, skipping any values that have already shown up in the head,
+        // and not exceeding the minimum size of the original sequences
+        for (Place place : itineraryB.getListOfDestinations()) {
+            if (appeared.contains(place) || offspringSequence.size() >= minSize) {
+                continue;
+            }
+            offspringSequence.add(place);
+        }
+
+        // Create the offspring itinerary
+        Itinerary offspring = new Itinerary();
+        offspring.setListOfDestinations(offspringSequence);
+
+        // Return our new offspring!
+        return offspring;
+    }
+
+
+    public static Itinerary mutate(Itinerary itinerary, ArrayList<Place> places) {
+        Itinerary newItinerary = new Itinerary();
+        ArrayList<Place> newItineraryList = new ArrayList<>(itinerary.getListOfDestinations());
+
+        if (random.nextDouble() < 0.05) {
+            //choose a random num from 0 to length of itinerary - 1. Swap that place with another random place.
+            System.out.println("Mutation Occurred");
+            int indexToRemove = random.nextInt(newItineraryList.size());
+            newItineraryList.remove(indexToRemove);
+
+            //use the getUniquePlace method to add to the newItineraryList.
+            //Ensure that the newly added place is not already present in the List (Can check using place.getID).
+            Place uniquePlace;
+            do {
+                uniquePlace = getUniquePlace(places);
+            } while(containsPlaceWithId(newItineraryList, uniquePlace.getPlaceId()));
+
+            //The newItineraryList should be set to the newItinerary.
+            newItineraryList.add(uniquePlace);
+            newItinerary.setListOfDestinations(newItineraryList);
+            return newItinerary;
+        }
+
+        return itinerary;
+    }
+
+    public static Place getUniquePlace(ArrayList<Place> places) {
+        Random random = new Random();
+        int placeIndex = random.nextInt(places.size());
+        return places.get(placeIndex);
+    }
+
+    public static boolean containsPlaceWithId(ArrayList<Place> places, String id) {
+        for (Place place : places) {
+            if (place.getPlaceId().equals(id)) {
+                return true;
+            }
+        }
+        return false;
     }
 
 

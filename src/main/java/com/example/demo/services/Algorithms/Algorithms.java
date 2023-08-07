@@ -6,7 +6,9 @@ import com.example.demo.model.Place;
 import com.example.demo.model.Population;
 import com.example.demo.model.User;
 import com.google.api.core.ApiFuture;
+import com.google.cloud.firestore.CollectionReference;
 import com.google.cloud.firestore.Firestore;
+import com.google.cloud.firestore.QueryDocumentSnapshot;
 import com.google.cloud.firestore.WriteResult;
 import com.google.firebase.cloud.FirestoreClient;
 import org.springframework.stereotype.Service;
@@ -21,6 +23,18 @@ import static com.example.demo.services.Algorithms.shortestPath.findShortestTota
 @Service
 public class Algorithms {
     public List<Itinerary> geneticAlgorithm(ArrayList<Place> places, int radius, Coordinate currentLocation) {
+
+        //popularity 4/5
+        //cost 1/5
+        //accessibility 5/5
+
+        //googleMaps API to find location / distance
+        //
+
+
+        //6 solutions. 3 extreme solutions (automatic optimals (infinite crowding distance), 3 specified to the user chosen objectives (Still more diversity))
+
+        //Knee-point solution
 
         //proceed with scoredDestination places
         //perform genetic algorithm steps
@@ -103,11 +117,12 @@ public class Algorithms {
                     father = GetParent(Population);
                 }
 
+                //advanced settings + probability of crossover ()
                 //Perform Crossover
-
                 tempOffSprings.add(GetOffspring(father,mother).get(0));
                 tempOffSprings.add(GetOffspring(father,mother).get(1));
 
+                //advanced settings
                 //Mutate
                 Mutate(tempOffSprings.get(0), places);
                 Mutate(tempOffSprings.get(1), places);
@@ -128,6 +143,7 @@ public class Algorithms {
                     .comparing(Itinerary::getRank)
                     .thenComparing(Itinerary::getCrowdingDistance, Comparator.reverseOrder()));
 
+            //advanced parameter
             newPopulation = new ArrayList<>(Population.getItineraries().subList(0, maxPopulation));
 
             Population.getItineraries().clear();
@@ -299,20 +315,36 @@ public class Algorithms {
     public List<String> saveItineraries(User user, List<Itinerary> itineraries) throws ExecutionException, InterruptedException {
         Firestore dbFirestore = FirestoreClient.getFirestore();
         List<String> timestamps = new ArrayList<>();
+        CollectionReference tempItinerariesRef = dbFirestore.collection("users").document(user.getUid()).collection("tempItineraries");
+
+        List<QueryDocumentSnapshot> existingDocuments = tempItinerariesRef.get().get().getDocuments();
+
+        // 2. Delete each document and its sub-collections if any exist
+        if (!existingDocuments.isEmpty()) {
+            for (QueryDocumentSnapshot doc : existingDocuments) {
+                CollectionReference subCollection = doc.getReference().collection("Destination List");
+                List<QueryDocumentSnapshot> subDocuments = subCollection.get().get().getDocuments();
+                for (QueryDocumentSnapshot subDoc : subDocuments) {
+                    subDoc.getReference().delete();
+                }
+                doc.getReference().delete();
+            }
+        }
 
         int i = 0;
         for (Itinerary itinerary : itineraries) {
             i++;
             String itineraryName = "Itinerary: " + i;
-
+            itinerary.setItineraryId(itineraryName);
             // Save each itinerary as a document under the "itineraries" sub-collection.
             dbFirestore.collection("users").document(user.getUid())
-                    .collection("itineraries").document(itineraryName)
+                    .collection("tempItineraries").document(itineraryName)
                     .set(itinerary);
 
             // Save each place as a document under the "places" sub-collection of the itinerary.
             for (Place place : itinerary.getListOfDestinations()) {
                 String destinationName = place.getName();
+
                 ApiFuture<WriteResult> collectionApiFuture = dbFirestore.collection("users").document(user.getUid())
                         .collection("tempItineraries").document(itineraryName)
                         .collection("Destination List").document("Destination: " + destinationName)

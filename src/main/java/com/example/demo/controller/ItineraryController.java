@@ -1,6 +1,7 @@
 package com.example.demo.controller;
 
 import com.example.demo.model.Itinerary;
+import com.example.demo.model.ItineraryRequest;
 import com.example.demo.model.Place;
 import com.example.demo.model.User;
 import com.example.demo.services.ItineraryService;
@@ -13,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -24,7 +26,7 @@ public class ItineraryController {
     private UserManagementService userManagementService;
 
     @Autowired
-    private ItineraryService itineraryService; // assuming you have a service for itineraries
+    private ItineraryService itineraryService;
 
     public ItineraryController(ItineraryService itineraryService) {
         this.itineraryService = itineraryService;
@@ -32,9 +34,13 @@ public class ItineraryController {
 
     @CrossOrigin(origins = "http://localhost:3000")
     @PostMapping("/select")
-    public ResponseEntity<Void> selectItinerary(@RequestHeader("Authorization") String JWT, @RequestParam("itineraryId") String itineraryId) throws FirebaseAuthException, ExecutionException, InterruptedException {
+    public ResponseEntity<Void> selectItinerary(@RequestHeader("Authorization") String JWT, @RequestBody ItineraryRequest itineraryRequest) throws FirebaseAuthException, ExecutionException, InterruptedException {
         // Delete other itineraries and keep the one user selected
-        itineraryService.selectItinerary(JWT, itineraryId);
+
+        System.out.println(itineraryRequest.getItineraryId());
+        System.out.println(itineraryRequest.getItineraryName());
+
+        itineraryService.selectItinerary(JWT, itineraryRequest.getItineraryId(), itineraryRequest.getItineraryName());
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
@@ -63,13 +69,16 @@ public class ItineraryController {
     }
 
     @CrossOrigin(origins = "http://localhost:3000")
-    @GetMapping("/fetchItineraries")
-    public ResponseEntity<List<Itinerary>> fetchItineraries(@RequestHeader("Authorization") String JWT) throws FirebaseAuthException {
+    @GetMapping("/fetchTempItineraries")
+    public ResponseEntity<List<Itinerary>> fetchTempItineraries(@RequestHeader("Authorization") String JWT) throws FirebaseAuthException, ExecutionException, InterruptedException {
         FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(JWT);
         User user = new User();
         user.setUid(decodedToken.getUid());
 
-        List<Itinerary> itineraries = itineraryService.fetchItinerariesForUser(user);
+        List<Itinerary> itineraries = new ArrayList<>(itineraryService.fetchItinerariesForUser(user));
+
+        System.out.println("Fetched itineraries: " + itineraries.size());
+
         return new ResponseEntity<>(itineraries, HttpStatus.OK);
     }
 

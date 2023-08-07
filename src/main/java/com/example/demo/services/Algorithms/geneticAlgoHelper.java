@@ -297,6 +297,8 @@ public class geneticAlgoHelper {
         Itinerary newItinerary = new Itinerary();
         ArrayList<Place> newItineraryList = new ArrayList<>(itinerary.getListOfDestinations());
 
+
+        //use as a parameter (advanced setting / test by myself (hypervolume))
         if (random.nextDouble() < 0.05) {
             //choose a random num from 0 to length of itinerary - 1. Swap that place with another random place.
             System.out.println("Mutation Occurred");

@@ -1,6 +1,7 @@
 package com.example.demo.model;
 
 import java.util.ArrayList;
+import java.util.List;
 
 //Gene
 
@@ -15,6 +16,21 @@ public class Place {
     private double rating;
     private int rating_amount;
     private int price;
+    private List<Double> originLocation;
+
+    public Place(String businessStatus, String name, String placeId, double longitude, double latitude, String imagesRef, ArrayList<String> placeTypes, double rating, int rating_amount, int price, List<Double> originLocation) {
+        this.businessStatus = businessStatus;
+        this.name = name;
+        this.placeId = placeId;
+        this.longitude = longitude;
+        this.latitude = latitude;
+        this.imagesRef = imagesRef;
+        this.placeTypes = placeTypes;
+        this.rating = rating;
+        this.rating_amount = rating_amount;
+        this.price = price;
+        this.originLocation = originLocation;
+    }
 
     public Place(String businessStatus, String name, String placeId, double longitude, double latitude, String imagesRef, ArrayList<String> placeTypes, double rating, int rating_amount, int price) {
         this.businessStatus = businessStatus;
@@ -31,6 +47,14 @@ public class Place {
 
     public Place() {
 
+    }
+
+    public List<Double> getOriginLocation() {
+        return originLocation;
+    }
+
+    public void setOriginLocation(List<Double> originLocation) {
+        this.originLocation = originLocation;
     }
 
     public String getName() {

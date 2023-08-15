@@ -22,7 +22,7 @@ public class PlaceService {
         this.objectMapper = objectMapper;
     }
 
-    public ArrayList<Place> fetchAllPlaces(double latitude, double longitude, int radius, ArrayList<String> arrayOfPlaces) {
+    public ArrayList<Place> fetchAllPlaces(double latitude, double longitude, int radius, ArrayList<String> arrayOfPlaces, List<Double> originLocation) {
         ArrayList<Place> places = new ArrayList<>();
 
         HashMap<String, List<String>> groupToPlace = new HashMap<>();
@@ -114,6 +114,7 @@ public class PlaceService {
                                     place.setRating_amount(userRatings);
                                     place.setPrice(price_level);
                                     place.setPlaceTypes(typeOfPlace);
+                                    place.setOriginLocation(originLocation);
 
                                     // Add the place to the list
                                     places.add(place);

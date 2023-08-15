@@ -39,7 +39,7 @@ public class PlaceController {
 
     @CrossOrigin(origins = "http://localhost:3000")
     @GetMapping("/search") //The responseEntity can be <void> after testing. Nothing needs to be sent back to the frontend.
-    public ResponseEntity<List<Place>> searchPlaces(@RequestHeader("Authorization") String JWT, @RequestParam("text") String locationText, @RequestParam("longitude") double longitude, @RequestParam("latitude") double latitude,
+    public ResponseEntity<List<Place>> searchPlaces(@RequestHeader("Authorization") String JWT, @RequestParam("text") String locationText,
                                                     @RequestParam("Cost") int costScore, @RequestParam("accessibility") int accessibilityScore, @RequestParam("popularity") int popularityScore,
                                                     @RequestParam("ArrayOfPlaces") ArrayList<String> arrayOfPlaces, @RequestParam("radius") int radius) throws Exception {
 
@@ -48,18 +48,19 @@ public class PlaceController {
         System.out.println(locationText);
         List<Double> locations = locationService.getLocation(locationText);
 
-        System.out.println(locations);
-        ArrayList<Place> places = placeService.fetchAllPlaces(locations.get(0), locations.get(1), radius, arrayOfPlaces);
-        //Create the algorithms to sort out the data and give each place a fitness score depending on the objective functions.
-        List<Place> top5Places = algorithms.top5(places);
-        System.out.println(top5Places);
+
+        ArrayList<Place> places = placeService.fetchAllPlaces(locations.get(0), locations.get(1), radius, arrayOfPlaces, locations);
+        //Create the algorithms to sort out the data and give each place a fitness score depending on the objective functions
 
         FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(JWT);
         User user = new User();
         user.setUid(decodedToken.getUid());
-        Coordinate currentLocation = new Coordinate(latitude, longitude);
+
+        Coordinate currentLocation = new Coordinate(locations.get(0), locations.get(1));
 
         List<Itinerary> sortedBest = algorithms.geneticAlgorithm(places, radius, currentLocation);
+
+        System.out.println(sortedBest);
 
         algorithms.saveItineraries(user, sortedBest);
 

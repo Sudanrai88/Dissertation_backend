@@ -27,6 +27,8 @@ public class AuthenticationController {
             // Verify the Firebase token using the Firebase Admin SDK
             FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(request);
             User user = new User();
+
+
             user.setEmail(decodedToken.getEmail());
             user.setName(decodedToken.getName());
             user.setPhotoURL(decodedToken.getPicture());

@@ -23,6 +23,8 @@ public class Itinerary {
     private double normalizedAccessibilityScore;
     private double normalizedCostScore;
 
+    private int userLikes;
+
 
     public ArrayList<Double> getNormalizedScoreList() {
         ArrayList<Double> normalizedScoreList = new ArrayList<>();
@@ -35,6 +37,14 @@ public class Itinerary {
     }
 
     public Itinerary() {
+    }
+
+    public int getUserLikes() {
+        return userLikes;
+    }
+
+    public void setUserLikes(int userLikes) {
+        this.userLikes = userLikes;
     }
 
     public void setCurrentScore(ArrayList<Double> currentScore) {

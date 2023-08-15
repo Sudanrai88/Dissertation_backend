@@ -183,11 +183,11 @@ public class geneticAlgoHelper {
 
         double maxAccessibility = itineraries.stream()
                 .mapToDouble(Itinerary::getAccessibilityScore)
-                .min().orElse(1.0); // To avoid division by zero
+                .max().orElse(1.0); // To avoid division by zero
 
         itineraries.forEach(i -> i.setNormalizedPopularityScore(-i.getPopularityScore() / maxPopularity));
         itineraries.forEach(i -> i.setNormalizedCostScore(i.getCostScore() / maxCost));
-        itineraries.forEach(i -> i.setNormalizedAccessibilityScore(-i.getAccessibilityScore() / maxAccessibility));
+        itineraries.forEach(i -> i.setNormalizedAccessibilityScore(i.getAccessibilityScore() / maxAccessibility));
     }
 
     private static boolean isNotDominated(Itinerary individualA, ArrayList<Itinerary> remainingToBeRanked) {
@@ -242,21 +242,29 @@ public class geneticAlgoHelper {
     }
 
     public static Itinerary TournamentSelection(Itinerary candidate1, Itinerary candidate2) {
-// Return the individual that has the higher fitness value
-        if (candidate1.getRank() < candidate2.getRank())
-        {
-            return candidate1;
+        Random random = new Random();
+
+        Itinerary betterCandidate;
+        Itinerary weakerCandidate;
+
+        if (candidate1.getRank() < candidate2.getRank()) {
+            betterCandidate = candidate1;
+            weakerCandidate = candidate2;
+        } else if (candidate1.getRank() > candidate2.getRank()) {
+            betterCandidate = candidate2;
+            weakerCandidate = candidate1;
+        } else { // candidate1.getRank() == candidate2.getRank()
+            if (candidate1.getCrowdingDistance() > candidate2.getCrowdingDistance()) {
+                betterCandidate = candidate1;
+                weakerCandidate = candidate2;
+            } else {
+                betterCandidate = candidate2;
+                weakerCandidate = candidate1;
+            }
         }
-        else if (candidate1.getRank() == candidate2.getRank())
-        {
-            return candidate1.getCrowdingDistance() > candidate2.getCrowdingDistance()
-                    ? candidate1
-                    : candidate2;
-        }
-        else
-        {
-            return candidate2;
-        }
+
+        // 75% chance to choose the better candidate
+        return (random.nextDouble() < 0.75) ? betterCandidate : weakerCandidate;
     }
 
     public static Itinerary doCrossover(Itinerary itineraryA, Itinerary itineraryB, int crossoverPosition) {

@@ -24,27 +24,28 @@ import static com.example.demo.services.Algorithms.shortestPath.findShortestTota
 public class Algorithms {
     public List<Itinerary> geneticAlgorithm(ArrayList<Place> places, int radius, Coordinate currentLocation) {
 
-        //popularity 4/5
-        //cost 1/5
-        //accessibility 5/5
+        //googleMaps API to find location / distance as the current is based on euclidean distance not Manhattan
 
-        //googleMaps API to find location / distance
-        //
+        //5 solutions. 3 extreme solutions (automatic optimals (infinite crowding distance), 2 specified to the user chosen objectives (Still more diversity))
 
-
-        //6 solutions. 3 extreme solutions (automatic optimals (infinite crowding distance), 3 specified to the user chosen objectives (Still more diversity))
-
-        //Knee-point solution
+        //Knee-point solution? Search what this is
 
         //proceed with scoredDestination places
         //perform genetic algorithm steps
+
+
+
+        //Potential to add multi-day Itineraries?
+        // In the generate page, another selectable tab that allows you to select from a calendar -> 16/08 - 24/08.
+
+        // Change current single generate page to have a calendar as well. Send information through to the backend and show in accounts!
+
+        //Show normalised values getting better with each generation, can be recorded for 25 generations on 10 different itineraries that are created.
+
         int maxPopulation = 0;
         //Init the generations
         switch (radius) {
-            case 1000 -> maxPopulation = 10;
-            case 2000 -> maxPopulation = 20;
-            case 3000 -> maxPopulation = 40;
-            case 4000 -> maxPopulation = 50;
+            case 1000, 2000, 3000, 4000 -> maxPopulation = 50;
             case 5000 -> maxPopulation = 60;
             default -> {
             }
@@ -152,20 +153,29 @@ public class Algorithms {
                 Population.addItinerary(itinerary);
             }
 
-
-
-            for (int i = 0; i < 5; i++) {
-                System.out.println("Rank: " + Population.getItineraries().get(i).getRank() + " normalized values: " + Population.getItineraries().get(i).getNormalizedScoreList() + " //Crowding distance: " + Population.getItineraries().get(i).getCrowdingDistance());
+            for (int i = 0; i < Population.getItineraries().size(); i++) {
+                System.out.println("NUMBER: " + i + "     Rank: " + Population.getItineraries().get(i).getRank() + " normalized values: " + Population.getItineraries().get(i).getNormalizedScoreList() + " //Crowding distance: " + Population.getItineraries().get(i).getCrowdingDistance());
+                System.out.println(Population.getItineraries().get(i));
             }
-
-            System.out.println(Population.getItineraries().get(0).toString());
             //testing (unit testing), problem instances (Sudan visits etc etc)
 
         }
         //testing (unit testing), problem instances (Sudan visits etc etc)
-        //With the final list of itineraries, gravitate towards the users choice. E.g. put a weighting through
+
+        //With the final list of itineraries, gravitate towards the users choice.
 
         System.out.println("Nice");
+        System.out.println(Population.getItineraries());
+
+        //The first should be the best priced
+        //2nd -> best ratings
+        //3rd -> best accessibility
+
+        //4th -> best fit 1
+        //5th -> best fit 2
+        System.out.println("WTF is happeing");
+        System.out.println(Population.getItineraries().subList(0,5));
+
         return Population.getItineraries().subList(0,5);
     }
 
@@ -230,7 +240,7 @@ public class Algorithms {
             }
             itineraries.get(i).setPopularityScore((totalPopularity/itineraryLength) * -1);
             itineraries.get(i).setCostScore((totalPrice/itineraryLength));
-            itineraries.get(i).setAccessibilityScore(findShortestTotalDistance(coordinates, currentLocation) * -1000);
+            itineraries.get(i).setAccessibilityScore(findShortestTotalDistance(coordinates, currentLocation) * 1000);
             scoredPopulation.add(itineraries.get(i).getPopularityScore());
             scoredPopulation.add(itineraries.get(i).getCostScore());
             scoredPopulation.add(itineraries.get(i).getAccessibilityScore());
@@ -253,11 +263,6 @@ public class Algorithms {
             popularityScore = Math.round(popularityScore * 100.0) / 100.0;
             return popularityScore;
         }
-    }
-
-    public List<Place> top5(List<Place> places) {
-        List<Place> newPlaces = places.subList(0,5);
-        return newPlaces;
     }
 
     public void setPriceLevel(Place destination, Map<String,Integer> averagePrices) {
@@ -283,12 +288,14 @@ public class Algorithms {
         }
     }
 
-    public int averagePlaceTypePrice(String placeType, List<Place> places) {
-        List<Place> placeTypes = places
+        public int averagePlaceTypePrice(String placeType, List<Place> places) {
+            List<Place> placeTypes = places
                 .stream()
                 .filter(c -> c.getPlaceTypes().contains(placeType))
                 .filter(c -> c.getPrice() > 0)//filter out anything that doesn't contain a cafe and anythign with price = 0
                 .toList();
+
+        //get everything
 
         if (placeTypes.isEmpty()) {
             int total = 1;
@@ -297,6 +304,7 @@ public class Algorithms {
 
         double averagePrice = 0;
         int validPlaces= 0;
+
         for (Place place: placeTypes) {
             if(place.getPrice() != 0) {
                 averagePrice += place.getPrice();
@@ -317,20 +325,6 @@ public class Algorithms {
         List<String> timestamps = new ArrayList<>();
         CollectionReference tempItinerariesRef = dbFirestore.collection("users").document(user.getUid()).collection("tempItineraries");
 
-        List<QueryDocumentSnapshot> existingDocuments = tempItinerariesRef.get().get().getDocuments();
-
-        // 2. Delete each document and its sub-collections if any exist
-        if (!existingDocuments.isEmpty()) {
-            for (QueryDocumentSnapshot doc : existingDocuments) {
-                CollectionReference subCollection = doc.getReference().collection("Destination List");
-                List<QueryDocumentSnapshot> subDocuments = subCollection.get().get().getDocuments();
-                for (QueryDocumentSnapshot subDoc : subDocuments) {
-                    subDoc.getReference().delete();
-                }
-                doc.getReference().delete();
-            }
-        }
-
         int i = 0;
         for (Itinerary itinerary : itineraries) {
             i++;
@@ -343,11 +337,11 @@ public class Algorithms {
 
             // Save each place as a document under the "places" sub-collection of the itinerary.
             for (Place place : itinerary.getListOfDestinations()) {
-                String destinationName = place.getName();
+                String destinationId = place.getPlaceId();
 
                 ApiFuture<WriteResult> collectionApiFuture = dbFirestore.collection("users").document(user.getUid())
                         .collection("tempItineraries").document(itineraryName)
-                        .collection("Destination List").document("Destination: " + destinationName)
+                        .collection("Destination List").document("Destination: " + destinationId)
                         .set(place);
 
                 timestamps.add(collectionApiFuture.get().getUpdateTime().toString());

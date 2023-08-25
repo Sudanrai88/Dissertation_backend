@@ -50,6 +50,7 @@ public class PlaceController {
 
 
         ArrayList<Place> places = placeService.fetchAllPlaces(locations.get(0), locations.get(1), radius, arrayOfPlaces, locations);
+        System.out.println("Total Places = " + places.size());
         //Create the algorithms to sort out the data and give each place a fitness score depending on the objective functions
 
         FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(JWT);
@@ -58,7 +59,7 @@ public class PlaceController {
 
         Coordinate currentLocation = new Coordinate(locations.get(0), locations.get(1));
 
-        List<Itinerary> sortedBest = algorithms.geneticAlgorithm(places, radius, currentLocation);
+        List<Itinerary> sortedBest = algorithms.geneticAlgorithm(places, radius, currentLocation, accessibilityScore, costScore, popularityScore);
 
         System.out.println(sortedBest);
 

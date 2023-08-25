@@ -1,4 +1,4 @@
-package com.example.demo.model;
+package com.example.demo.model.Requests;
 
 public class ImageRequest {
     private String imageUrl;

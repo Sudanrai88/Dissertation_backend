@@ -1,12 +1,15 @@
 package com.example.demo.services.Algorithms;
 
 
+import com.example.demo.model.Cuboid;
 import com.example.demo.model.Itinerary;
 import com.example.demo.model.Place;
+import com.example.demo.model.Population;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.apache.commons.math3.util.Pair;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 
@@ -50,87 +53,64 @@ public class geneticAlgoHelper {
     }
 
     private static void calculateCrowdingDistance(ArrayList<Itinerary> singleRank) {
-        // As we only have three objectives, ordering individuals along one front allows us to make assumptions
-        // about the locations of the neighboring individuals in the array.
-        List<Itinerary> orderedItineraries = singleRank;
-        List<Itinerary> boundaries = new ArrayList<>();
-        Itinerary bestPop = bestPopularity(orderedItineraries);
-        Itinerary bestCost = bestCost(orderedItineraries);
-        Itinerary bestAcc = bestAccessibility(orderedItineraries);
+        int size = singleRank.size();
 
-        orderedItineraries.remove(bestPop);
-        orderedItineraries.remove(bestCost);
-        orderedItineraries.remove(bestAcc);
+        // Initialize crowding distances to 0.
+        for (Itinerary itin : singleRank) {
+            itin.setCrowdingDistance(0.0);
+            itin.setBestType("");
+        }
 
-        int itinerariesInFront = orderedItineraries.size();
+        // Assign infinity to the best values for each objective
+        Itinerary bestPopularity = bestPopularity(singleRank);
+        Itinerary bestCost = bestCost(singleRank);
+        Itinerary bestAccessibility = bestAccessibility(singleRank);
 
-        boundaries.add(bestPop);
-        boundaries.add(bestCost);
-        boundaries.add(bestAcc);
+        bestPopularity.setCrowdingDistance(Double.POSITIVE_INFINITY);
+        bestCost.setCrowdingDistance(Double.POSITIVE_INFINITY);
+        bestAccessibility.setCrowdingDistance(Double.POSITIVE_INFINITY);
 
-        //For the remaining itineraries calculate the 3D Euclidean distance
-        Map<Integer, ArrayList<Double>> intToDistance = new HashMap<>();
+        // Calculate the crowding distance based on the objectives
+        for (int obj = 0; obj < 3; obj++) {
+            // Sort based on the objective
+            int finalObj = obj;
+            singleRank.sort(Comparator.comparing(itin -> getObjective(itin, finalObj)));
 
-        for (int i = 0; i < itinerariesInFront; i++) {
-            ArrayList<Double> listOfDistances = new ArrayList<>();
-            double distance;
-            Vector3D currentItinerary = new Vector3D(orderedItineraries.get(i).getNormalizedPopularityScore(),
-                    orderedItineraries.get(i).getNormalizedPopularityScore(),
-                    orderedItineraries.get(i).getNormalizedPopularityScore());
-
-            for (int j = 0; j < itinerariesInFront; j++) {
-                if (i != j) {
-                Vector3D otherItinerary = new Vector3D(orderedItineraries.get(j).getNormalizedPopularityScore(),
-                        orderedItineraries.get(j).getNormalizedPopularityScore(),
-                        orderedItineraries.get(j).getNormalizedPopularityScore());
-
-                    distance = currentItinerary.distance(otherItinerary);
-
-                    listOfDistances.add(distance);
+            // If this itinerary's crowding distance isn't already infinity, compute for the rest
+            for (int i = 1; i < size - 1; i++) {
+                Itinerary itin = singleRank.get(i);
+                if (itin.getCrowdingDistance() != Double.POSITIVE_INFINITY) {
+                    double previousObjectiveValue = getObjective(singleRank.get(i - 1), obj);
+                    double nextObjectiveValue = getObjective(singleRank.get(i + 1), obj);
+                    double objectiveRange = getObjective(singleRank.get(size - 1), obj) - getObjective(singleRank.get(0), obj);
+                    // Update the crowding distance for this objective
+                    if (objectiveRange != 0) {
+                        itin.setCrowdingDistance(itin.getCrowdingDistance() + (nextObjectiveValue - previousObjectiveValue) / objectiveRange);
+                    }
                 }
             }
-
-            intToDistance.put(i, listOfDistances);
         }
+    }
 
-
-        Double maxDistance = intToDistance.values()
-                .stream()
-                .flatMap(List::stream) // Flatten the list of distances
-                .max(Double::compareTo) // Find the maximum distance
-                .orElse(0.0);
-
-        //Normalize the distance
-        for (ArrayList<Double> distances : intToDistance.values()) {
-            for (int i = 0; i < distances.size(); i++) {
-                distances.set(i, distances.get(i) / maxDistance);
-            }
+    private static double getObjective(Itinerary itinerary, int objectiveIndex) {
+        switch (objectiveIndex) {
+            case 0:
+                return itinerary.getNormalizedPopularityScore();
+            case 1:
+                return itinerary.getNormalizedCostScore();
+            case 2:
+                return itinerary.getNormalizedAccessibilityScore();
+            default:
+                throw new IllegalArgumentException("Invalid objective index");
         }
-
-
-        for (int i = 0; i < itinerariesInFront; i++) {
-            List<Double> distances = intToDistance.get(i);
-
-            // Find the smallest three distances
-            List<Double> smallestThree = distances.stream()
-                    .sorted() // Sort the distances in ascending order
-                    .limit(3)  // Take the first three (smallest) distances
-                    .collect(Collectors.toList());
-
-            double closest3 = smallestThree.stream()
-                    .mapToDouble(Double::doubleValue)
-                    .sum();
-
-            orderedItineraries.get(i).setCrowdingDistance(closest3/3);
-        }
-
     }
 
     private static Itinerary bestCost(List<Itinerary> orderedItineraries) {
         double minCost = Double.POSITIVE_INFINITY;
         Itinerary selectedItinerary = null;
+
         for (Itinerary itinerary : orderedItineraries) {
-            double costScore = itinerary.getCostScore();
+            double costScore = itinerary.getNormalizedCostScore();
             if (costScore < minCost) {
                 minCost = costScore;
                 selectedItinerary = itinerary;
@@ -138,6 +118,8 @@ public class geneticAlgoHelper {
         }
         assert selectedItinerary != null;
         selectedItinerary.setCrowdingDistance(Double.POSITIVE_INFINITY);
+        selectedItinerary.setBestType("Cost");
+
         return selectedItinerary;
     }
 
@@ -145,7 +127,7 @@ public class geneticAlgoHelper {
         double minPopularity = Double.POSITIVE_INFINITY;
         Itinerary selectedItinerary = null;
         for (Itinerary itinerary : orderedItineraries) {
-            double popularityScore = itinerary.getPopularityScore();
+            double popularityScore = itinerary.getNormalizedPopularityScore();
             if (popularityScore < minPopularity) {
                 minPopularity = popularityScore;
                 selectedItinerary = itinerary;
@@ -153,6 +135,7 @@ public class geneticAlgoHelper {
         }
         assert selectedItinerary != null;
         selectedItinerary.setCrowdingDistance(Double.POSITIVE_INFINITY);
+        selectedItinerary.setBestType("Popularity");
         return selectedItinerary;
     }
 
@@ -160,7 +143,7 @@ public class geneticAlgoHelper {
         double minAccessibility = Double.POSITIVE_INFINITY;
         Itinerary selectedItinerary = null;
         for (Itinerary itinerary : orderedItineraries) {
-            double accessibilityScore = itinerary.getAccessibilityScore();
+            double accessibilityScore = itinerary.getNormalizedAccessibilityScore();
             if (accessibilityScore < minAccessibility) {
                 minAccessibility = accessibilityScore;
                 selectedItinerary = itinerary;
@@ -168,11 +151,12 @@ public class geneticAlgoHelper {
         }
         assert selectedItinerary != null;
         selectedItinerary.setCrowdingDistance(Double.POSITIVE_INFINITY);
+        selectedItinerary.setBestType("Accessibility");
+
         return selectedItinerary;
     }
 
-    private static void normalizeFitnessValues(ArrayList<Itinerary> itineraries)
-    {
+    private static void normalizeFitnessValues(ArrayList<Itinerary> itineraries) {
         double maxPopularity = itineraries.stream()
                 .mapToDouble(Itinerary::getPopularityScore)
                 .min().orElse(1.0); // To avoid division by zero
@@ -196,56 +180,48 @@ public class geneticAlgoHelper {
             if (individualA.equals(individualB)) {
                 continue;
             }
+            // Check domination conditions
+            boolean atLeastEqualInPopularity = individualB.getNormalizedPopularityScore() <= individualA.getNormalizedPopularityScore();
+            boolean atLeastEqualInCost = individualB.getNormalizedCostScore() <= individualA.getNormalizedCostScore();
+            boolean atLeastEqualInAccessibility = individualB.getNormalizedAccessibilityScore() <= individualA.getNormalizedAccessibilityScore();
 
-            // If this individual is at least better than us in one objective and equal in another,
-            // then we are dominated by this individual
-            if (individualB.getPopularityScore() <= individualA.getPopularityScore() &&
-                    individualB.getCostScore() <= individualA.getCostScore() &&
-                    individualB.getAccessibilityScore() <= individualA.getAccessibilityScore()) {
+            boolean strictlyBetterInAtLeastOne = (individualB.getNormalizedPopularityScore() < individualA.getNormalizedPopularityScore()) ||
+                    (individualB.getNormalizedCostScore() < individualA.getNormalizedCostScore()) ||
+                    (individualB.getNormalizedAccessibilityScore() < individualA.getNormalizedAccessibilityScore());
 
-                // A log to understand which object dominates and why
-                /*System.out.println("Individual A [Popularity Score: " + individualA.getPopularityScore()
-                        + ", Cost Score: " + individualA.getCostScore() + ", Accessibility Score: "
-                        + individualA.getAccessibilityScore() + "] is dominated by Individual B [Popularity Score: "
-                        + individualB.getPopularityScore() + ", Cost Score: " + individualB.getCostScore()
-                        + ", Accessibility Score: " + individualB.getAccessibilityScore() + "].");*/
-
+            if (atLeastEqualInPopularity && atLeastEqualInCost && atLeastEqualInAccessibility && strictlyBetterInAtLeastOne) {
                 return false;
             }
         }
-
-        // Add a log to know when an individual is not dominated
-        /*System.out.println("Individual A [Popularity Score: " + individualA.getPopularityScore()
-                + ", Cost Score: " + individualA.getCostScore() + ", Accessibility Score: "
-                + individualA.getAccessibilityScore() + "] is not dominated by any other individual.");*/
-
         return true;
     }
 
-    public static ArrayList<Itinerary> GetCandidateParents(ArrayList<Itinerary> population)
-    {
-        ArrayList<Itinerary> pairedCandidates = new ArrayList<>();
+    public static ArrayList<Itinerary> GetCandidateParents(ArrayList<Itinerary> population) {
+        ArrayList<Itinerary> chosenCandidates = new ArrayList<>();
         // Grab two random individuals from the population
         Itinerary candidateA = population.get(random.nextInt(population.size()));
         Itinerary candidateB = population.get(random.nextInt(population.size()));
 
+
         // Ensure that the two individuals are unique
-        while (candidateA == candidateB)
-        {
-            candidateB = population.get(random.nextInt(population.size()));
-        }
+        Collections.shuffle(population);
 
-        pairedCandidates.add(candidateA);
-        pairedCandidates.add(candidateB);
+        candidateA = population.get(0);
+        candidateB = population.get(1);
 
-        return pairedCandidates;
+
+
+        chosenCandidates.add(candidateA);
+        chosenCandidates.add(candidateB);
+
+        return chosenCandidates;
     }
 
     public static Itinerary TournamentSelection(Itinerary candidate1, Itinerary candidate2) {
-        Random random = new Random();
 
         Itinerary betterCandidate;
         Itinerary weakerCandidate;
+
 
         if (candidate1.getRank() < candidate2.getRank()) {
             betterCandidate = candidate1;
@@ -253,50 +229,61 @@ public class geneticAlgoHelper {
         } else if (candidate1.getRank() > candidate2.getRank()) {
             betterCandidate = candidate2;
             weakerCandidate = candidate1;
-        } else { // candidate1.getRank() == candidate2.getRank()
-            if (candidate1.getCrowdingDistance() > candidate2.getCrowdingDistance()) {
-                betterCandidate = candidate1;
-                weakerCandidate = candidate2;
-            } else {
-                betterCandidate = candidate2;
-                weakerCandidate = candidate1;
-            }
+        } else {
+            // Rank is equal, use crowding distance to determine.
+            betterCandidate = (candidate1.getCrowdingDistance() > candidate2.getCrowdingDistance()) ? candidate1 : candidate2;
+            weakerCandidate = (betterCandidate == candidate1) ? candidate2 : candidate1;
         }
 
-        // 75% chance to choose the better candidate
-        return (random.nextDouble() < 0.75) ? betterCandidate : weakerCandidate;
+        int rankDifference = Math.abs(candidate1.getRank() - candidate2.getRank());
+
+        // Adjust selection probability based on rank difference
+        double selectionProbability = 0.9 - (0.05 * rankDifference);
+
+
+        // 75% chance to choose the better candidate, low to increase diversity
+        return (random.nextDouble() < selectionProbability) ? betterCandidate : weakerCandidate;
     }
 
-    public static Itinerary doCrossover(Itinerary itineraryA, Itinerary itineraryB, int crossoverPosition) {
+    //changed from one-point to a uniform crossover.
+    public static Itinerary doCrossover(Itinerary itineraryA, Itinerary itineraryB) {
         Random random = new Random();
-        // Find the minimum size between both itineraries
-        int minSize = Math.min(itineraryA.getListOfDestinations().size(), itineraryB.getListOfDestinations().size());
 
-        // Generate a number between 1 and minSize - 1 to be our crossover position
-        crossoverPosition = crossoverPosition == -1
-                ? random.nextInt(minSize - 1) + 1
-                : crossoverPosition;
+        int sizeA = itineraryA.getListOfDestinations().size();
+        int sizeB = itineraryB.getListOfDestinations().size();
 
-        // Grab the head from the first individual
-        ArrayList<Place> offspringSequence = new ArrayList<>(itineraryA.getListOfDestinations().subList(0, crossoverPosition));
-
-        // Create a hash for quicker 'exists in head' checks
-        Set<Place> appeared = new HashSet<>(offspringSequence);
-
-        // Append individualB to the head, skipping any values that have already shown up in the head,
-        // and not exceeding the minimum size of the original sequences
-        for (Place place : itineraryB.getListOfDestinations()) {
-            if (appeared.contains(place) || offspringSequence.size() >= minSize) {
-                continue;
-            }
-            offspringSequence.add(place);
+        if (sizeA != sizeB) {
+            throw new IllegalArgumentException("The sizes of the two itineraries must be the same for uniform crossover.");
         }
 
-        // Create the offspring itinerary
-        Itinerary offspring = new Itinerary();
-        offspring.setListOfDestinations(offspringSequence);
+        List<Place> offspringSequence = new ArrayList<>(sizeA);
 
-        // Return our new offspring!
+        // Uniform crossover
+        for (int i = 0; i < sizeA; i++) {
+            if (random.nextBoolean()) {
+                offspringSequence.add(itineraryA.getListOfDestinations().get(i));
+            } else {
+                offspringSequence.add(itineraryB.getListOfDestinations().get(i));
+            }
+        }
+
+        // Correct duplicates
+        Set<Place> uniquePlaces = new HashSet<>(offspringSequence);
+        for (int i = 0; i < offspringSequence.size(); i++) {
+            Place currentPlace = offspringSequence.get(i);
+            if (Collections.frequency(offspringSequence, currentPlace) > 1) { // if duplicate
+                for (Place place : itineraryB.getListOfDestinations()) {
+                    if (!uniquePlaces.contains(place)) {
+                        offspringSequence.set(i, place);
+                        uniquePlaces.add(place);
+                        break;
+                    }
+                }
+            }
+        }
+
+        Itinerary offspring = new Itinerary();
+        offspring.setListOfDestinations(new ArrayList<>(offspringSequence));
         return offspring;
     }
 
@@ -305,11 +292,9 @@ public class geneticAlgoHelper {
         Itinerary newItinerary = new Itinerary();
         ArrayList<Place> newItineraryList = new ArrayList<>(itinerary.getListOfDestinations());
 
-
         //use as a parameter (advanced setting / test by myself (hypervolume))
-        if (random.nextDouble() < 0.05) {
+        if (random.nextDouble() < 0.1) {
             //choose a random num from 0 to length of itinerary - 1. Swap that place with another random place.
-            System.out.println("Mutation Occurred");
             int indexToRemove = random.nextInt(newItineraryList.size());
             newItineraryList.remove(indexToRemove);
 
@@ -318,7 +303,7 @@ public class geneticAlgoHelper {
             Place uniquePlace;
             do {
                 uniquePlace = getUniquePlace(places);
-            } while(containsPlaceWithId(newItineraryList, uniquePlace.getPlaceId()));
+            } while (containsPlaceWithId(newItineraryList, uniquePlace.getPlaceId()));
 
             //The newItineraryList should be set to the newItinerary.
             newItineraryList.add(uniquePlace);
@@ -345,5 +330,31 @@ public class geneticAlgoHelper {
     }
 
 
+    public static double computeHypervolume(Population rank1, double ref_x, double ref_y, double ref_z) {
+        List<Itinerary> sortedItineraries = new ArrayList<>(rank1.getItineraries());
+        Collections.sort(sortedItineraries, Comparator.comparingDouble(Itinerary::getNormalizedPopularityScore));
+
+        double hypervolume = 0;
+
+        double prev_x = ref_x, prev_y = ref_y, prev_z = ref_z;
+
+
+        for (Itinerary itinerary : sortedItineraries) {
+            double x = itinerary.getNormalizedPopularityScore();
+            double y = itinerary.getNormalizedAccessibilityScore();
+            double z = itinerary.getNormalizedCostScore();
+
+            double volume = (ref_x - x) * (ref_y - y) * (ref_z - z);
+            double overlapVolume = (ref_x - x) * (ref_y - prev_y) * (ref_z - prev_z);
+
+            hypervolume += volume - overlapVolume;
+
+            prev_x = x;
+            prev_y = y;
+            prev_z = z;
+        }
+
+        return hypervolume;
+    }
 }
 

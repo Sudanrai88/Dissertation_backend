@@ -23,6 +23,11 @@ public class Itinerary {
     private double normalizedAccessibilityScore;
     private double normalizedCostScore;
 
+    private String formattedAddress;
+    private String editorialSummary;
+
+    private String bestType;
+
     private int userLikes;
 
 
@@ -37,6 +42,14 @@ public class Itinerary {
     }
 
     public Itinerary() {
+    }
+
+    public String getBestType() {
+        return bestType;
+    }
+
+    public void setBestType(String bestType) {
+        this.bestType = bestType;
     }
 
     public int getUserLikes() {
@@ -158,21 +171,26 @@ public class Itinerary {
         return Objects.hash(getPopularityScore(), getCostScore(), getAccessibilityScore());
     }
 
+
     @Override
     public String toString() {
-        return "Itinerary{\n" +
-                "listOfDestinations=" + listOfDestinations + ",\n" +
-                "currentScore=" + currentScore + ",\n" +
-                "idList=" + idList + ",\n" +
-                "itineraryId='" + itineraryId + '\'' + ",\n" +
-                "rank=" + rank + ",\n" +
-                "crowdingDistance=" + crowdingDistance + ",\n" +
-                "popularityScore=" + popularityScore + ",\n" +
-                "accessibilityScore=" + accessibilityScore + ",\n" +
-                "costScore=" + costScore + ",\n" +
-                "normalizedPopularityScore=" + normalizedPopularityScore + ",\n" +
-                "normalizedAccessibilityScore=" + normalizedAccessibilityScore + ",\n" +
-                "normalizedCostScore=" + normalizedCostScore + "\n" +
+        return "Itinerary{" +
+                "listOfDestinations=" + listOfDestinations +
+                ", currentScore=" + currentScore +
+                ", idList=" + idList +
+                ", itineraryId='" + itineraryId + '\'' +
+                ", rank=" + rank +
+                ", crowdingDistance=" + crowdingDistance +
+                ", popularityScore=" + popularityScore +
+                ", accessibilityScore=" + accessibilityScore +
+                ", costScore=" + costScore +
+                ", normalizedPopularityScore=" + normalizedPopularityScore +
+                ", normalizedAccessibilityScore=" + normalizedAccessibilityScore +
+                ", normalizedCostScore=" + normalizedCostScore +
+                ", formattedAddress='" + formattedAddress + '\'' +
+                ", editorialSummary='" + editorialSummary + '\'' +
+                ", bestType='" + bestType + '\'' +
+                ", userLikes=" + userLikes +
                 '}';
     }
 }

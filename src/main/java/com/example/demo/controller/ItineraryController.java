@@ -1,8 +1,11 @@
 package com.example.demo.controller;
 
-import com.example.demo.SuperSecretApiKey;
 import com.example.demo.model.*;
+import com.example.demo.model.Requests.ItineraryRequest;
+import com.example.demo.model.Requests.OrderRequest;
+import com.example.demo.model.Requests.PlaceRequest;
 import com.example.demo.services.ItineraryService;
+import com.example.demo.services.LocationService;
 import com.example.demo.services.UserManagementService;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
@@ -11,8 +14,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.RestTemplate;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -27,6 +30,9 @@ public class ItineraryController {
 
     @Autowired
     private ItineraryService itineraryService;
+
+    @Autowired
+    private LocationService locationService;
 
     public ItineraryController(ItineraryService itineraryService) {
         this.itineraryService = itineraryService;
@@ -75,11 +81,11 @@ public class ItineraryController {
     @DeleteMapping("/deletePlace")
     public ResponseEntity<Void> deletePlace(@RequestHeader("Authorization") String JWT,
                                             @RequestParam("itineraryId") String itineraryId,
-                                            @RequestParam("placeId") String placeId) throws FirebaseAuthException {
+                                            @RequestParam("placeId") String placeId, @RequestParam("index") int index) throws FirebaseAuthException {
         FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(JWT);
         String userId = decodedToken.getUid();
 
-        itineraryService.deletePlaceFromItinerary(userId, itineraryId, placeId);
+        itineraryService.deletePlaceFromItinerary(userId, itineraryId, placeId, index);
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
@@ -172,5 +178,30 @@ public class ItineraryController {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
         return new ResponseEntity<>(itinerary, HttpStatus.OK);
+    }
+
+    @CrossOrigin(origins = "http://localhost:3000")
+    @PostMapping("/addNewItinerary")
+    public void addNewItinerary(@RequestHeader("Authorization") String JWT, @RequestBody PlaceRequest request) throws Exception {
+        FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(JWT);
+
+        User user = new User();
+
+        System.out.println(request.getIndex());
+
+        user.setUid(decodedToken.getUid());
+        itineraryService.addNewItinerary(request.getInputValue(), user, request.getItineraryId(), request.getIndex());
+    }
+
+    @CrossOrigin(origins = "http://localhost:3000")
+    @PostMapping("/swapOrderIndex")
+    public void swapOrderIndex(@RequestHeader("Authorization") String JWT, @RequestBody OrderRequest request) throws Exception {
+
+        FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(JWT);
+        User user = new User();
+        user.setUid(decodedToken.getUid());
+        System.out.println("Hello");
+
+        itineraryService.swapIndexOrder(request.getItineraryId(), user, request.getToGoDestination(), request.getSource());
     }
 }

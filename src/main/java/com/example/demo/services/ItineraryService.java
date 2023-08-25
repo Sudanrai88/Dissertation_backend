@@ -4,6 +4,9 @@ import com.example.demo.SuperSecretApiKey;
 import com.example.demo.model.Itinerary;
 import com.example.demo.model.Place;
 import com.example.demo.model.User;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.*;
 import com.google.firebase.auth.FirebaseAuth;
@@ -14,22 +17,23 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
+import java.lang.reflect.Array;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 
 @Service
 public class ItineraryService {
 
     private final RestTemplate restTemplate;
+    private final ObjectMapper objectMapper;
+
 
     @Autowired
     private Firestore firestore;  // Assuming you're using Firestore. Initialize this as needed.
 
-    public ItineraryService(RestTemplate restTemplate, Firestore firestore) {
+    public ItineraryService(RestTemplate restTemplate, ObjectMapper objectMapper, Firestore firestore) {
         this.restTemplate = restTemplate;
+        this.objectMapper = objectMapper;
         this.firestore = firestore;
     }
 
@@ -94,12 +98,30 @@ public class ItineraryService {
         itineraryRef.update("places." + updatedPlace.getPlaceId(), updatedPlace); // If Place is stored as a map
     }
 
-    public void deletePlaceFromItinerary(String userId, String itineraryId, String placeId) {
+    public void deletePlaceFromItinerary(String userId, String itineraryId, String placeId, int index) {
         DocumentReference itineraryRef = firestore.collection("users").document(userId).collection("itineraries")
                 .document(itineraryId).collection("Destination List").document("Destination: " + placeId);
         // Assuming the 'Place' is stored as a subcollection or a map within the itinerary
         // Adjust this logic as per your Firestore schema
         itineraryRef.delete();
+
+        CollectionReference DestinationRef = firestore.collection("users").document(userId).collection("itineraries")
+                .document(itineraryId).collection("Destination List");
+
+        ApiFuture<QuerySnapshot> futureDestinationsToUpdate = DestinationRef.whereGreaterThanOrEqualTo("order", index + 1).get();
+
+        try {
+            QuerySnapshot destinationsToUpdateSnapshot = futureDestinationsToUpdate.get();
+
+            // Loop through each destination and increment the order
+            for (QueryDocumentSnapshot destinationDocument : destinationsToUpdateSnapshot.getDocuments()) {
+                int currentOrder = destinationDocument.getLong("order").intValue();
+                DocumentReference destinationRef = destinationDocument.getReference();
+                destinationRef.update("order", currentOrder - 1);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public void deleteItinerary (String userId, String itineraryId) {
@@ -118,6 +140,7 @@ public class ItineraryService {
         System.out.println("Deleted");
 
     }
+
 
     public List<Itinerary> fetchTempItinerariesForUser(User user) throws ExecutionException, InterruptedException {
         System.out.println("UID: " + user.getUid());
@@ -139,8 +162,10 @@ public class ItineraryService {
             itinerary.setItineraryId(itineraryDocRef.getId());
 
             ArrayList<Place> places = new ArrayList<>();
+
             for (QueryDocumentSnapshot document : snapshot.getDocuments()) {
                 Place place = new Place();
+                Place testPlace = document.toObject(Place.class); //Apparently this does all of the below?
 
                 int cost = ((Number) Objects.requireNonNull(document.get("price"))).intValue();
                 int ratingAmount = ((Number) Objects.requireNonNull(document.get("rating_amount"))).intValue();
@@ -151,12 +176,11 @@ public class ItineraryService {
                 place.setImages(document.getString("images"));
                 place.setPrice(cost);
                 place.setRating_amount(ratingAmount);
-
                 ArrayList<Double> originDestinationList = (ArrayList<Double>) document.get("originLocation");
+
                 if (originDestinationList != null && !originDestinationList.isEmpty()) {
                     place.setOriginLocation(originDestinationList);
                 }
-
                 places.add(place);
             }
 
@@ -165,6 +189,7 @@ public class ItineraryService {
         }
         return itineraries;
     }
+
 
     public List<Itinerary> fetchItineraries(User user) throws ExecutionException, InterruptedException {
         System.out.println("UID: " + user.getUid());
@@ -181,7 +206,9 @@ public class ItineraryService {
 
             CollectionReference destinationListRef = itineraryDocRef.collection("Destination List");
 
-            ApiFuture<QuerySnapshot> future = destinationListRef.get();
+            //ordered by the set order during Algorithms.java(saveItineraries).
+            ApiFuture<QuerySnapshot> future = destinationListRef.orderBy("order").get();
+
             QuerySnapshot snapshot = future.get();
             itinerary.setItineraryId(itineraryDocRef.getId());
 
@@ -191,6 +218,7 @@ public class ItineraryService {
 
                 int cost = ((Number) Objects.requireNonNull(document.get("price"))).intValue();
                 int ratingAmount = ((Number) Objects.requireNonNull(document.get("rating_amount"))).intValue();
+                int order = ((Number) Objects.requireNonNull(document.get("order"))).intValue();
 
                 place.setPlaceId(document.getString("placeId"));
                 place.setName(document.getString("name"));
@@ -198,21 +226,30 @@ public class ItineraryService {
                 place.setImages(document.getString("images"));
                 place.setPrice(cost);
                 place.setRating_amount(ratingAmount);
+                place.setOrder(order);
 
                 ArrayList<Double> originDestinationList = (ArrayList<Double>) document.get("originLocation");
                 if (originDestinationList != null && !originDestinationList.isEmpty()) {
                     place.setOriginLocation(originDestinationList);
                 }
-
-
                 places.add(place);
             }
 
+            //order the listOfDestinations depending on place order
+
             itinerary.setListOfDestinations(places);
+
+            ArrayList<Place> destinations = itinerary.getListOfDestinations();
+            destinations.sort(Comparator.comparingInt(Place::getOrder));
+
+            itinerary.setListOfDestinations(destinations);
+
+
             itineraries.add(itinerary);
         }
         return itineraries;
     }
+
 
     public Itinerary fetchItineraryById(User userId, String itineraryId) throws ExecutionException, InterruptedException {
 
@@ -239,6 +276,7 @@ public class ItineraryService {
 
             int cost = ((Number) Objects.requireNonNull(document.get("price"))).intValue();
             int ratingAmount = ((Number) Objects.requireNonNull(document.get("rating_amount"))).intValue();
+            int order =  ((Number) Objects.requireNonNull(document.get("order"))).intValue();
 
             place.setPlaceId(document.getString("placeId"));
             place.setName(document.getString("name"));
@@ -248,19 +286,28 @@ public class ItineraryService {
             place.setRating_amount(ratingAmount);
             place.setLongitude(document.getDouble("longitude"));
             place.setLatitude(document.getDouble("latitude"));
+            place.setOrder(order);
+
 
             ArrayList<Double> originDestinationList = (ArrayList<Double>) document.get("originLocation");
             if (originDestinationList != null && !originDestinationList.isEmpty()) {
                 place.setOriginLocation(originDestinationList);
             }
-
             places.add(place);
         }
 
+
         itinerary.setListOfDestinations(places);
+
+        ArrayList<Place> destinations = itinerary.getListOfDestinations();
+        destinations.sort(Comparator.comparingInt(Place::getOrder));
+
+        itinerary.setListOfDestinations(destinations);
+
 
         return itinerary;
     }
+
 
     public Itinerary fetchPopularItinerary(String itineraryId) throws ExecutionException, InterruptedException {
         DocumentReference itineraryDocRef = firestore.collection("popular_itineraries").document("ListOfItineraries").collection("itineraries").document(itineraryId);
@@ -284,6 +331,8 @@ public class ItineraryService {
 
             int cost = ((Number) Objects.requireNonNull(document.get("price"))).intValue();
             int ratingAmount = ((Number) Objects.requireNonNull(document.get("rating_amount"))).intValue();
+            int order =  ((Number) Objects.requireNonNull(document.get("order"))).intValue();
+
 
             place.setPlaceId(document.getString("placeId"));
             place.setName(document.getString("name"));
@@ -293,6 +342,7 @@ public class ItineraryService {
             place.setRating_amount(ratingAmount);
             place.setLongitude(document.getDouble("longitude"));
             place.setLatitude(document.getDouble("latitude"));
+            place.setOrder(order);
 
             ArrayList<Double> originDestinationList = (ArrayList<Double>) document.get("originLocation");
             if (originDestinationList != null && !originDestinationList.isEmpty()) {
@@ -303,6 +353,11 @@ public class ItineraryService {
         }
 
         itinerary.setListOfDestinations(places);
+
+        ArrayList<Place> destinations = itinerary.getListOfDestinations();
+        destinations.sort(Comparator.comparingInt(Place::getOrder));
+
+        itinerary.setListOfDestinations(destinations);
 
         return itinerary;
 
@@ -319,7 +374,6 @@ public class ItineraryService {
         // Fetch the selected itinerary
         DocumentReference selectedItinerary = firestore.collection("users").document(userId).collection("itineraries").document(itineraryId);
         DocumentReference newItinerary = firestore.collection("popular_itineraries").document("ListOfItineraries").collection("itineraries").document(itineraryId);
-
         DocumentSnapshot selectedSnapshot = selectedItinerary.get().get();
 
         if (selectedSnapshot.exists()) {
@@ -340,14 +394,12 @@ public class ItineraryService {
 
     }
 
+
     public List<Itinerary> fetchPopularItineraries() throws ExecutionException, InterruptedException {
         List<Itinerary> itineraries = new ArrayList<>();
 
         CollectionReference itineraryRef = firestore.collection("popular_itineraries").document("ListOfItineraries").collection("itineraries");
         Iterable<DocumentReference> Docs = itineraryRef.listDocuments();
-
-
-
         for (DocumentReference doc : Docs) {
 
             Itinerary itinerary = new Itinerary();
@@ -375,6 +427,8 @@ public class ItineraryService {
 
                 int cost = ((Number) Objects.requireNonNull(document.get("price"))).intValue();
                 int ratingAmount = ((Number) Objects.requireNonNull(document.get("rating_amount"))).intValue();
+                int order =  ((Number) Objects.requireNonNull(document.get("order"))).intValue();
+
 
                 place.setPlaceId(document.getString("placeId"));
                 place.setName(document.getString("name"));
@@ -382,6 +436,7 @@ public class ItineraryService {
                 place.setImages(document.getString("images"));
                 place.setPrice(cost);
                 place.setRating_amount(ratingAmount);
+                place.setOrder(order);
 
                 ArrayList<Double> originDestinationList = (ArrayList<Double>) document.get("originLocation");
                 if (originDestinationList != null && !originDestinationList.isEmpty()) {
@@ -391,11 +446,18 @@ public class ItineraryService {
             }
 
             itinerary.setListOfDestinations(places);
+
+            ArrayList<Place> destinations = itinerary.getListOfDestinations();
+            destinations.sort(Comparator.comparingInt(Place::getOrder));
+
+            itinerary.setListOfDestinations(destinations);
+
             itineraries.add(itinerary);
         }
         System.out.println("DId it");
         return itineraries;
     }
+
 
     public void changeLike(String itineraryId, int value) {
         CollectionReference itineraryRef = firestore.collection("popular_itineraries").document("ListOfItineraries").collection("itineraries");
@@ -407,6 +469,121 @@ public class ItineraryService {
     }
 
 
+    public void addNewItinerary(String textLocation, User user, String itineraryId, int index) {
+
+        String url = "https://maps.googleapis.com/maps/api/place/findplacefromtext/json?fields=formatted_address,name,rating,user_ratings_total,opening_hours,geometry,user_ratings_total,place_id,photos,price_level&input=" +
+                textLocation + "&inputtype=textquery&key=" + SuperSecretApiKey.getApiKey();
+
+        System.out.println(textLocation);
+
+        ResponseEntity<String> response = makeApiRequest(url);
+        String responseBody;
+        Place place = new Place();
+
+        responseBody = response.getBody();
+        System.out.println(responseBody);
+
+        if (response.getStatusCode() == HttpStatus.OK) {
+            JsonNode root = null;
+            try {
+                root = objectMapper.readTree(responseBody);
+
+            } catch (JsonProcessingException e) {
+                e.printStackTrace();
+                System.out.println("ended here");
+            }
+
+            JsonNode resultNode = root.get("candidates");
+            System.out.println(resultNode);
+
+            if (resultNode.isArray() && resultNode.size() > 0) {
+                // Access the first candidate, candidate is an [].
+                JsonNode candidate = resultNode.get(0);
+
+                int price_level = candidate.has("price_level") ? candidate.get("price_level").asInt() : 0;
+                String name = candidate.get("name").asText();
+                String placeId = candidate.get("place_id").asText();
+                Double placeLatitude = candidate.get("geometry").get("location").get("lat").asDouble();
+                Double placeLongitude = candidate.get("geometry").get("location").get("lng").asDouble();
+
+                // Since there's no 'editorial_summary' in your example JSON, I'm leaving this as is.
+                String editorial = candidate.has("editorial_summary") ? candidate.get("editorial_summary").asText() : "Empty";
+
+                String imagesRef = "";
+                if (candidate.has("photos")) {
+                    JsonNode photosNode = candidate.get("photos");
+                    if (photosNode.isArray() && photosNode.size() > 0) {
+                        imagesRef = photosNode.get(0).get("photo_reference").asText();
+                    }
+                }
+
+                double rating = candidate.has("rating") ? candidate.get("rating").asDouble() : 0;
+                int userRatings = candidate.has("user_ratings_total") ? candidate.get("user_ratings_total").asInt() : 0;
+
+                List<Double> origin = new ArrayList<>();
+                origin.add(placeLatitude);
+                origin.add(placeLongitude);
+
+                place.setName(name);
+                place.setPlaceId(placeId);
+                place.setLatitude(placeLatitude);
+                place.setLongitude(placeLongitude);
+                place.setImages(imagesRef);
+                place.setRating(rating);
+                place.setRating_amount(userRatings);
+                place.setPrice(price_level);
+                place.setEditorialSummary(editorial);
+                place.setOriginLocation(origin);
+                place.setOrder(index + 1);
+            }
+        }
+
+        CollectionReference itineraryRef = firestore.collection("users").document(user.getUid()).collection("itineraries").document(itineraryId).collection("Destination List");
+        String placesId = place.getPlaceId();
+
+        //fetch all destinations with order value aboev index + 1
+        ApiFuture<QuerySnapshot> futureDestinationsToUpdate = itineraryRef.whereGreaterThanOrEqualTo("order", index + 1).get();
+
+        try {
+            QuerySnapshot destinationsToUpdateSnapshot = futureDestinationsToUpdate.get();
+
+            // Loop through each destination and increment the order
+            for (QueryDocumentSnapshot destinationDocument : destinationsToUpdateSnapshot.getDocuments()) {
+                int currentOrder = destinationDocument.getLong("order").intValue();
+                DocumentReference destinationRef = destinationDocument.getReference();
+                destinationRef.update("order", currentOrder + 1);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        ApiFuture<WriteResult> collectionApiFuture = itineraryRef
+                .document("Destination: " + placesId)
+                .set(place);
+    }
+
+    public void swapIndexOrder(String itineraryId, User user, int toGoDestination, int source) {
+        CollectionReference itineraryRef = firestore.collection("users").document(user.getUid()).collection("itineraries").document(itineraryId).collection("Destination List");
+        try {
+            ApiFuture<QuerySnapshot> sourceToDestination = itineraryRef.whereEqualTo("order", source).get();
+            ApiFuture<QuerySnapshot> destinationToSource = itineraryRef.whereEqualTo("order", toGoDestination).get();
+
+
+            QueryDocumentSnapshot sourceDocument = sourceToDestination.get().getDocuments().get(0);
+            QueryDocumentSnapshot destinationDocument = destinationToSource.get().getDocuments().get(0);
+
+            DocumentReference sourceRef = sourceDocument.getReference();
+            DocumentReference destinationRef = destinationDocument.getReference();
+
+            // Swap the order values
+            sourceRef.update("order", toGoDestination);
+            destinationRef.update("order", source);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+    }
 
         private ResponseEntity<String> makeApiRequest (String url){
             HttpHeaders headers = new HttpHeaders();
@@ -414,6 +591,7 @@ public class ItineraryService {
             HttpEntity<String> entity = new HttpEntity<>(headers);
             return restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
         }
+
 }
 
     // Add other CRUD operations here if necessary

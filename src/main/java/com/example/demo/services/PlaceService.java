@@ -49,7 +49,6 @@ public class PlaceService {
                     do {
                         ResponseEntity<String> response = makeApiRequest(url);
                         responseBody = response.getBody();
-                        System.out.println(responseBody);
 
                         if (response.getStatusCode() == HttpStatus.OK) {
                             JsonNode root;
@@ -104,6 +103,7 @@ public class PlaceService {
 
                                     // Create a new Place object and set its properties
                                     Place place = new Place();
+
                                     place.setBusinessStatus(businessStatus);
                                     place.setName(name);
                                     place.setPlaceId(placeId);
@@ -116,6 +116,7 @@ public class PlaceService {
                                     place.setPlaceTypes(typeOfPlace);
                                     place.setOriginLocation(originLocation);
 
+
                                     // Add the place to the list
                                     places.add(place);
                                 }
@@ -125,7 +126,7 @@ public class PlaceService {
                                 String nextPageToken = root.get("next_page_token").asText();
                                 // Wait for the token to become valid
                                 try {
-                                    TimeUnit.SECONDS.sleep(1);
+                                    TimeUnit.MILLISECONDS.sleep(200);
                                 } catch (InterruptedException e) {
                                     e.printStackTrace();
                                 }

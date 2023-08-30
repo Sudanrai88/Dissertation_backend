@@ -75,7 +75,7 @@ public class ItineraryService {
             // Delete all other itineraries for the user except the selected one
             QuerySnapshot itineraries = firestore.collection("users").document(userId).collection("tempItineraries").get().get();
             for (DocumentSnapshot itinerary : itineraries.getDocuments()) {
-                if (!itinerary.getId().equals(itineraryId)) {// Ensure you don't delete the selected itinerary again
+                if (!itinerary.getId().equals(itineraryId)) {// Selected itinerary not deleted again
                     if(!itinerary.getId().equals("placeHolder")) {
                         CollectionReference destList = itinerary.getReference().collection("Destination List");
                         QuerySnapshot unchosenDestinations = destList.get().get();
@@ -157,9 +157,18 @@ public class ItineraryService {
             DocumentReference itineraryDocRef = itineraryRef.document("Itinerary: " + i);
             CollectionReference destinationListRef = itineraryDocRef.collection("Destination List");
 
-            ApiFuture<QuerySnapshot> future = destinationListRef.get();
+            ApiFuture<QuerySnapshot> future = destinationListRef.get(); //DestinationList
             QuerySnapshot snapshot = future.get();
+
+            ApiFuture<QuerySnapshot> future2 = itineraryRef.get(); //tempItin
+            QueryDocumentSnapshot snapshot2 = future2.get().getDocuments().get(i -1);
+
+            itinerary.setBestType(snapshot2.getString("bestType"));
+            // Set specific bestType
+
+
             itinerary.setItineraryId(itineraryDocRef.getId());
+
 
             ArrayList<Place> places = new ArrayList<>();
 
@@ -176,6 +185,7 @@ public class ItineraryService {
                 place.setImages(document.getString("images"));
                 place.setPrice(cost);
                 place.setRating_amount(ratingAmount);
+
                 ArrayList<Double> originDestinationList = (ArrayList<Double>) document.get("originLocation");
 
                 if (originDestinationList != null && !originDestinationList.isEmpty()) {
@@ -568,7 +578,6 @@ public class ItineraryService {
             ApiFuture<QuerySnapshot> sourceToDestination = itineraryRef.whereEqualTo("order", source).get();
             ApiFuture<QuerySnapshot> destinationToSource = itineraryRef.whereEqualTo("order", toGoDestination).get();
 
-
             QueryDocumentSnapshot sourceDocument = sourceToDestination.get().getDocuments().get(0);
             QueryDocumentSnapshot destinationDocument = destinationToSource.get().getDocuments().get(0);
 
@@ -578,6 +587,9 @@ public class ItineraryService {
             // Swap the order values
             sourceRef.update("order", toGoDestination);
             destinationRef.update("order", source);
+
+            System.out.println(toGoDestination);
+            System.out.println(source);
 
         } catch (Exception e) {
             e.printStackTrace();

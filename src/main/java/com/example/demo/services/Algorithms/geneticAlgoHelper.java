@@ -159,15 +159,15 @@ public class geneticAlgoHelper {
     private static void normalizeFitnessValues(ArrayList<Itinerary> itineraries) {
         double maxPopularity = itineraries.stream()
                 .mapToDouble(Itinerary::getPopularityScore)
-                .min().orElse(1.0); // To avoid division by zero
+                .min().orElse(1.0);
 
         double maxCost = itineraries.stream()
                 .mapToDouble(Itinerary::getCostScore)
-                .max().orElse(1.0); // To avoid division by zero
+                .max().orElse(1.0);
 
         double maxAccessibility = itineraries.stream()
                 .mapToDouble(Itinerary::getAccessibilityScore)
-                .max().orElse(1.0); // To avoid division by zero
+                .max().orElse(1.0);
 
         itineraries.forEach(i -> i.setNormalizedPopularityScore(-i.getPopularityScore() / maxPopularity));
         itineraries.forEach(i -> i.setNormalizedCostScore(i.getCostScore() / maxCost));
@@ -239,7 +239,6 @@ public class geneticAlgoHelper {
 
         // Adjust selection probability based on rank difference
         double selectionProbability = 0.9 - (0.05 * rankDifference);
-
 
         // 75% chance to choose the better candidate, low to increase diversity
         return (random.nextDouble() < selectionProbability) ? betterCandidate : weakerCandidate;

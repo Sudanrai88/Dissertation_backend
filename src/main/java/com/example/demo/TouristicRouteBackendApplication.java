@@ -13,9 +13,9 @@ public class TouristicRouteBackendApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(TouristicRouteBackendApplication.class, args);
 	}
+
 	@Bean
 	public RestTemplate restTemplate() {
 		return new RestTemplate();
 	}
-
 }

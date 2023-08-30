@@ -1,6 +1,7 @@
 package com.example.demo.model;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 //Gene
@@ -19,6 +20,7 @@ public class Place {
     private List<Double> originLocation;
     private String editorialSummary;
     private int order;
+    private Date time;
 
     public Place(String businessStatus, String name, String placeId, double longitude, double latitude, String imagesRef, ArrayList<String> placeTypes, double rating, int rating_amount, int price, List<Double> originLocation) {
         this.businessStatus = businessStatus;

@@ -139,8 +139,6 @@ public class Algorithms {
 
                 //advanced settings
                 //Mutate
-
-
                 //Add offSpring to the population
             }
 
@@ -263,6 +261,8 @@ public class Algorithms {
             }
         }
 
+        //If itinerary 1 2 or 3 is the same, the get the second best of Pop, Access or Cost.
+
         finalList.addAll(toAddList);
 
 
@@ -360,7 +360,7 @@ public class Algorithms {
                 break;
             }
         }
-        // 3. Take top 2
+
         return top2;
     }
 
@@ -501,9 +501,8 @@ public class Algorithms {
         return totalAveragePrice;
     }
 
-    public List<String> saveItineraries(User user, List<Itinerary> itineraries) throws ExecutionException, InterruptedException {
+    public void saveItineraries(User user, List<Itinerary> itineraries) {
         Firestore dbFirestore = FirestoreClient.getFirestore();
-        List<String> timestamps = new ArrayList<>();
         CollectionReference tempItinerariesRef = dbFirestore.collection("users").document(user.getUid()).collection("tempItineraries");
 
         int i = 0;
@@ -512,8 +511,7 @@ public class Algorithms {
             String itineraryName = "Itinerary: " + i;
             itinerary.setItineraryId(itineraryName);
             // Save each itinerary as a document under the "itineraries" sub-collection.
-            dbFirestore.collection("users").document(user.getUid())
-                    .collection("tempItineraries").document(itineraryName)
+            tempItinerariesRef.document(itineraryName)
                     .set(itinerary);
 
             // Save each place as a document under the "places" sub-collection of the itinerary.
@@ -525,11 +523,8 @@ public class Algorithms {
                         .collection("Destination List").document("Destination: " + destinationId)
                         .set(place);
 
-                timestamps.add(collectionApiFuture.get().getUpdateTime().toString());
             }
         }
-
-        return timestamps;
     }
 
     public void removeDuplicates (ArrayList<Place> places) {

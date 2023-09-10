@@ -501,6 +501,8 @@ public class Algorithms {
         return totalAveragePrice;
     }
 
+    //Somewhere here should be a service that makes a place details call to the description of each place.
+
     public void saveItineraries(User user, List<Itinerary> itineraries) {
         Firestore dbFirestore = FirestoreClient.getFirestore();
         CollectionReference tempItinerariesRef = dbFirestore.collection("users").document(user.getUid()).collection("tempItineraries");

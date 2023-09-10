@@ -12,6 +12,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.FirebaseToken;
+import io.grpc.internal.JsonUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
@@ -36,6 +37,8 @@ public class PlaceController {
         this.algorithms = algorithms;
         this.locationService = locationService;
     }
+
+
 
     @CrossOrigin(origins = "http://localhost:3000")
     @GetMapping("/search") //The responseEntity can be <void> after testing. Nothing needs to be sent back to the frontend.

@@ -40,7 +40,7 @@ public class PlaceController {
 
 
 
-    @CrossOrigin(origins = "https://gentrip.netlify.app")
+    @CrossOrigin(origins = {"http://localhost:3000", "https://gentrip.netlify.app"})
     @GetMapping("/search") //The responseEntity can be <void> after testing. Nothing needs to be sent back to the frontend.
     public ResponseEntity<List<Place>> searchPlaces(@RequestHeader("Authorization") String JWT, @RequestParam("text") String locationText,
                                                     @RequestParam("Cost") int costScore, @RequestParam("accessibility") int accessibilityScore, @RequestParam("popularity") int popularityScore,

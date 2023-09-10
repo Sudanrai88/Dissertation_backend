@@ -38,7 +38,7 @@ public class ItineraryController {
         this.itineraryService = itineraryService;
     }
 
-    @CrossOrigin(origins = "https://gentrip.netlify.app")
+    @CrossOrigin(origins = {"http://localhost:3000", "https://gentrip.netlify.app"})
     @PostMapping("/select")
     public ResponseEntity<Void> selectItinerary(@RequestHeader("Authorization") String JWT, @RequestBody ItineraryRequest itineraryRequest) throws FirebaseAuthException, ExecutionException, InterruptedException {
         // Delete other itineraries and keep the one user selected
@@ -50,7 +50,7 @@ public class ItineraryController {
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
-    @CrossOrigin(origins = "https://gentrip.netlify.app")
+    @CrossOrigin(origins = {"http://localhost:3000", "https://gentrip.netlify.app"})
     @PostMapping("/addToPopular")
     public ResponseEntity<Void> addItineraryToPopularItineraries(@RequestHeader("Authorization") String JWT, @RequestBody ItineraryRequest itineraryRequest) throws FirebaseAuthException, ExecutionException, InterruptedException {
 
@@ -65,7 +65,7 @@ public class ItineraryController {
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
-    @CrossOrigin(origins = "https://gentrip.netlify.app")
+    @CrossOrigin(origins = {"http://localhost:3000", "https://gentrip.netlify.app"})
     @PutMapping("/updatePlace")
     public ResponseEntity<Void> updatePlace(@RequestHeader("Authorization") String JWT,
                                             @RequestParam("itineraryId") String itineraryId,
@@ -77,7 +77,7 @@ public class ItineraryController {
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
-    @CrossOrigin(origins = "https://gentrip.netlify.app")
+    @CrossOrigin(origins = {"http://localhost:3000", "https://gentrip.netlify.app"})
     @DeleteMapping("/deletePlace")
     public ResponseEntity<Void> deletePlace(@RequestHeader("Authorization") String JWT,
                                             @RequestParam("itineraryId") String itineraryId,
@@ -89,7 +89,7 @@ public class ItineraryController {
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
-    @CrossOrigin(origins = "https://gentrip.netlify.app")
+    @CrossOrigin(origins = {"http://localhost:3000", "https://gentrip.netlify.app"})
     @DeleteMapping("/deleteItinerary")
     public ResponseEntity<Void> deleteItinerary(@RequestHeader("Authorization") String JWT,
                                             @RequestParam("itineraryId") String itineraryId) throws FirebaseAuthException {
@@ -100,7 +100,7 @@ public class ItineraryController {
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
-    @CrossOrigin(origins = "https://gentrip.netlify.app")
+    @CrossOrigin(origins = {"http://localhost:3000", "https://gentrip.netlify.app"})
     @GetMapping("/fetchTempItineraries")
     public ResponseEntity<List<Itinerary>> fetchTempItineraries(@RequestHeader("Authorization") String JWT) throws FirebaseAuthException, ExecutionException, InterruptedException {
         FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(JWT);
@@ -114,7 +114,7 @@ public class ItineraryController {
         return new ResponseEntity<>(itineraries, HttpStatus.OK);
     }
 
-    @CrossOrigin(origins = "https://gentrip.netlify.app")
+    @CrossOrigin(origins = {"http://localhost:3000", "https://gentrip.netlify.app"})
     @GetMapping("/fetchItineraries")
     public ResponseEntity<List<Itinerary>> fetchItineraries(@RequestHeader("Authorization") String JWT) throws FirebaseAuthException, ExecutionException, InterruptedException {
         FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(JWT);
@@ -127,7 +127,7 @@ public class ItineraryController {
         return new ResponseEntity<>(itineraries, HttpStatus.OK);
     }
 
-    @CrossOrigin(origins = "https://gentrip.netlify.app")
+    @CrossOrigin(origins = {"http://localhost:3000", "https://gentrip.netlify.app"})
     @GetMapping("/fetchPopularItineraries")
     public ResponseEntity<List<Itinerary>> fetchPopularItineraries(@RequestHeader("Authorization") String JWT) throws FirebaseAuthException, ExecutionException, InterruptedException {
         FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(JWT);
@@ -144,7 +144,7 @@ public class ItineraryController {
     }
 
 
-    @CrossOrigin(origins = "https://gentrip.netlify.app")
+    @CrossOrigin(origins = {"http://localhost:3000", "https://gentrip.netlify.app"})
     @GetMapping("/changeLike")
     public void changeLike( @RequestParam("itineraryId") String itineraryId, @RequestParam("value") int value) throws FirebaseAuthException, ExecutionException, InterruptedException {
         System.out.println("Changed");
@@ -153,7 +153,7 @@ public class ItineraryController {
     }
 
 
-    @CrossOrigin(origins = "https://gentrip.netlify.app")
+    @CrossOrigin(origins = {"http://localhost:3000", "https://gentrip.netlify.app"})
     @GetMapping("/{id}")
     public ResponseEntity<Itinerary> getItinerary(@RequestHeader("Authorization") String JWT, @PathVariable String id) throws FirebaseAuthException, ExecutionException, InterruptedException {
         FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(JWT);
@@ -168,7 +168,7 @@ public class ItineraryController {
         return new ResponseEntity<>(itinerary, HttpStatus.OK);
     }
 
-    @CrossOrigin(origins = "https://gentrip.netlify.app")
+    @CrossOrigin(origins = {"http://localhost:3000", "https://gentrip.netlify.app"})
     @GetMapping("/popular/{id}")
     public ResponseEntity<Itinerary> getPopularItinerary( @PathVariable String id) throws FirebaseAuthException, ExecutionException, InterruptedException {
 
@@ -180,7 +180,7 @@ public class ItineraryController {
         return new ResponseEntity<>(itinerary, HttpStatus.OK);
     }
 
-    @CrossOrigin(origins = "https://gentrip.netlify.app")
+    @CrossOrigin(origins = {"http://localhost:3000", "https://gentrip.netlify.app"})
     @PostMapping("/addNewItinerary")
     public void addNewItinerary(@RequestHeader("Authorization") String JWT, @RequestBody PlaceRequest request) throws Exception {
         FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(JWT);
@@ -193,7 +193,7 @@ public class ItineraryController {
         itineraryService.addNewItinerary(request.getInputValue(), user, request.getItineraryId(), request.getIndex());
     }
 
-    @CrossOrigin(origins = "https://gentrip.netlify.app")
+    @CrossOrigin(origins = {"http://localhost:3000", "https://gentrip.netlify.app"})
     @PostMapping("/swapOrderIndex")
     public void swapOrderIndex(@RequestHeader("Authorization") String JWT, @RequestBody OrderRequest request) throws Exception {
 

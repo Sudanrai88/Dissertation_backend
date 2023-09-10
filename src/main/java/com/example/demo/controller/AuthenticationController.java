@@ -19,7 +19,7 @@ public class AuthenticationController {
     @Autowired
     private UserManagementService userManagementService;
 
-    @CrossOrigin(origins = "https://gentrip.netlify.app")
+    @CrossOrigin(origins = {"http://localhost:3000", "https://gentrip.netlify.app"})
 
     @PostMapping("/verify-token")
     public ResponseEntity<Boolean> verifyToken(@RequestBody String request) {

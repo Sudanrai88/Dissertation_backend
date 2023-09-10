@@ -1,15 +1,12 @@
 package com.example.demo.services.Algorithms;
 
 
-import com.example.demo.model.Cuboid;
+
 import com.example.demo.model.Itinerary;
 import com.example.demo.model.Place;
 import com.example.demo.model.Population;
-import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
-import org.apache.commons.math3.util.Pair;
-
 import java.util.*;
-import java.util.function.Function;
+
 import java.util.stream.Collectors;
 
 

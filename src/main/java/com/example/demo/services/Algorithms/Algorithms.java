@@ -473,7 +473,7 @@ public class Algorithms {
             List<Place> placeTypes = places
                 .stream()
                 .filter(c -> c.getPlaceTypes().contains(placeType))
-                .filter(c -> c.getPrice() > 0)//filter out anything that doesn't contain a cafe and anythign with price = 0
+                .filter(c -> c.getPrice() > 0)
                 .toList();
 
         //get everything

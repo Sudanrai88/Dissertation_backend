@@ -137,13 +137,11 @@ public class Algorithms {
                     offSpring.add(tempOffSprings.get(1));
                 }
 
-                //advanced settings
-                //Mutate
-                //Add offSpring to the population
             }
 
             runObjectiveFunctions(offSpring, currentLocation, itineraryLength);
             Population.getItineraries().addAll(offSpring);
+
 
             geneticAlgoHelper.updatePopulationFitness(Population.getItineraries());
 
@@ -153,11 +151,6 @@ public class Algorithms {
             Population.getItineraries().sort(Comparator
                     .comparing(Itinerary::getRank)
                     .thenComparing(Itinerary::getCrowdingDistance, Comparator.reverseOrder()));
-
-
-            //Find a reference point, pop, cost, access
-
-
 
             double averageCrowding = 0;
             int count = 0;
@@ -171,16 +164,12 @@ public class Algorithms {
 
             averageCrowding = averageCrowding/ count;
 
-
-            /*System.out.println(averageCrowding);*/
-
             newPopulation = new ArrayList<>(Population.getItineraries().subList(0, maxPopulation));
             Population.getItineraries().clear();
 
             for (Itinerary itinerary: newPopulation) {
                 Population.addItinerary(itinerary);
             }
-
             Population rank1 = new Population();
 
             for(Itinerary itinerary: Population.getItineraries()) {
@@ -243,7 +232,6 @@ public class Algorithms {
                 }
                 System.out.println(Population.getItineraries().get(i));
             }*/
-            //testing (unit testing), problem instances (Sudan visits etc etc)
 
         }
         //testing (unit testing), problem instances (Sudan visits etc etc)
@@ -284,9 +272,7 @@ public class Algorithms {
         //getting random numbers as each place is unique and is getting re-written (setOrder) by the next itinerary that contains the same place.
         //Need a way to only affect the order of the place for the specific itinerary
 
-        //Can use cloneing to fix the issue above^
-
-
+        //Can use cloning to fix the issue above^
 
         //Add order here where the sorting is done
         //The index of the ones below the added destination should be +1 to keep indexing in order.
@@ -338,31 +324,28 @@ public class Algorithms {
     }
 
 
-    public ArrayList<Itinerary> selectByUserPreference(ArrayList<Itinerary> itineraries, int accessibilityScore, int costScore, int popularityScore) {
+        public ArrayList<Itinerary> selectByUserPreference(ArrayList<Itinerary> itineraries, int accessibilityScore, int costScore, int popularityScore) {
 
-        Collections.sort(itineraries, (itin1, itin2) -> Double.compare(
-                desirability(itin2, accessibilityScore, costScore, popularityScore),
-                desirability(itin1, accessibilityScore, costScore, popularityScore)
-        ));
+            Collections.sort(itineraries, (itin1, itin2) -> Double.compare(
+                    desirability(itin2, accessibilityScore, costScore, popularityScore),
+                    desirability(itin1, accessibilityScore, costScore, popularityScore)
+            ));
 
-        // 1. Remove itineraries with crowding distance of infinity
-        ArrayList<Itinerary> filteredItineraries = (ArrayList<Itinerary>) itineraries.stream()
-                .filter(itin -> itin.getCrowdingDistance() != Double.POSITIVE_INFINITY)
-                .collect(Collectors.toList());
+            ArrayList<Itinerary> filteredItineraries = (ArrayList<Itinerary>) itineraries.stream()
+                    .filter(itin -> itin.getCrowdingDistance() != Double.POSITIVE_INFINITY)
+                    .collect(Collectors.toList());
 
-        // 3. Take top itinerary and then find a non-similar one
-        ArrayList<Itinerary> top2 = new ArrayList<>();
-        top2.add(filteredItineraries.get(0));
+            ArrayList<Itinerary> top2 = new ArrayList<>();
+            top2.add(filteredItineraries.get(0));
 
-        for (int i = 1; i < filteredItineraries.size(); i++) {
-            if (!areSimilar(top2.get(0), filteredItineraries.get(i))) {
-                top2.add(filteredItineraries.get(i));
-                break;
+            for (int i = 1; i < filteredItineraries.size(); i++) {
+                if (!areSimilar(top2.get(0), filteredItineraries.get(i))) {
+                    top2.add(filteredItineraries.get(i));
+                    break;
+                }
             }
+            return top2;
         }
-
-        return top2;
-    }
 
     private boolean areSimilar(Itinerary itin1, Itinerary itin2) {
         List<String> places1 = itin1.getIdList(); // assuming there's a method like this
@@ -391,6 +374,7 @@ public class Algorithms {
     }
 
     //CONSTRAINT THAT 3 Itineraries has to be from user group type selection 1, and 2 from user group type selection 2. E.g. selection 1: Food, selection 2: Artistic. 3/5 itineraries from Food, 2/5 from Artistic.
+
     public void initializePopulation (ArrayList<Place> places, Population population, int maxPopulation, int itineraryLength) {
         for (int i = 0; i < maxPopulation; i++) {
             Collections.shuffle(places);
@@ -399,9 +383,7 @@ public class Algorithms {
             itinerary.setListOfDestinations(shuffledList);
             itinerary.setItineraryId("Itinerary: " + i);
             population.addItinerary(itinerary);
-/*
-            System.out.println("//Name = " + population.getItineraries().get(i).getItineraryId() + " //Itinerary in population: " + population.getItineraries().get(i).getListOfDestinations());
-*/
+
         }
     }
 
@@ -524,7 +506,6 @@ public class Algorithms {
                         .collection("tempItineraries").document(itineraryName)
                         .collection("Destination List").document("Destination: " + destinationId)
                         .set(place);
-
             }
         }
     }

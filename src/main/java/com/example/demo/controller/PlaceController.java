@@ -68,7 +68,6 @@ public class PlaceController {
 
         algorithms.saveItineraries(user, sortedBest);
 
-
         if (!places.isEmpty()) {
             for (Place place : places) {
                 System.out.println(place.toString());
@@ -77,8 +76,6 @@ public class PlaceController {
         } else {
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         }
-
-
     }
 }
 

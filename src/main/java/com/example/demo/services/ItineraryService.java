@@ -101,8 +101,8 @@ public class ItineraryService {
     public void deletePlaceFromItinerary(String userId, String itineraryId, String placeId, int index) {
         DocumentReference itineraryRef = firestore.collection("users").document(userId).collection("itineraries")
                 .document(itineraryId).collection("Destination List").document("Destination: " + placeId);
-        // Assuming the 'Place' is stored as a subcollection or a map within the itinerary
-        // Adjust this logic as per your Firestore schema
+        // The 'Place' is stored as a subcollection within the itinerary
+
         itineraryRef.delete();
 
         CollectionReference DestinationRef = firestore.collection("users").document(userId).collection("itineraries")

@@ -5,7 +5,7 @@ import java.util.*;
 public class shortestPath {
 
     private static double calculateDistance(Coordinate c1, Coordinate c2) {
-        //Haversine formula to calculate the distance between two coordinates on the Earth's surface.
+        //Haversine formula to calculate the distance between two coordinates oon the earths surface.
         double earthRadius = 6371; // Radius of the Earth in kilometers
         double lat1 = Math.toRadians(c1.x);
         double lon1 = Math.toRadians(c1.y);

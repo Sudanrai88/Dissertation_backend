@@ -20,9 +20,7 @@ public class geneticAlgoHelper {
             itinerary.setRank(-1);
             itinerary.setCrowdingDistance(-1);
         }
-
         normalizeFitnessValues(population);
-
         ArrayList<Itinerary> remainingToBeRanked = new ArrayList<>(population);
 
         // Put every individual in the population into their fronts
@@ -38,9 +36,7 @@ public class geneticAlgoHelper {
                     itinerariesInRank.add(itinerary);
                 }
             }
-
             itinerariesInRank.forEach(remainingToBeRanked::remove);
-
             rank++;
         }
 
@@ -73,7 +69,6 @@ public class geneticAlgoHelper {
             int finalObj = obj;
             singleRank.sort(Comparator.comparing(itin -> getObjective(itin, finalObj)));
 
-            // If this itinerary's crowding distance isn't already infinity, compute for the rest
             for (int i = 1; i < size - 1; i++) {
                 Itinerary itin = singleRank.get(i);
                 if (itin.getCrowdingDistance() != Double.POSITIVE_INFINITY) {
@@ -199,14 +194,11 @@ public class geneticAlgoHelper {
         Itinerary candidateA = population.get(random.nextInt(population.size()));
         Itinerary candidateB = population.get(random.nextInt(population.size()));
 
-
         // Ensure that the two individuals are unique
         Collections.shuffle(population);
 
         candidateA = population.get(0);
         candidateB = population.get(1);
-
-
 
         chosenCandidates.add(candidateA);
         chosenCandidates.add(candidateB);
@@ -251,9 +243,7 @@ public class geneticAlgoHelper {
         if (sizeA != sizeB) {
             throw new IllegalArgumentException("The sizes of the two itineraries must be the same for uniform crossover.");
         }
-
         List<Place> offspringSequence = new ArrayList<>(sizeA);
-
         // Uniform crossover
         for (int i = 0; i < sizeA; i++) {
             if (random.nextBoolean()) {
@@ -262,7 +252,6 @@ public class geneticAlgoHelper {
                 offspringSequence.add(itineraryB.getListOfDestinations().get(i));
             }
         }
-
         // Correct duplicates
         Set<Place> uniquePlaces = new HashSet<>(offspringSequence);
         for (int i = 0; i < offspringSequence.size(); i++) {
@@ -277,7 +266,6 @@ public class geneticAlgoHelper {
                 }
             }
         }
-
         Itinerary offspring = new Itinerary();
         offspring.setListOfDestinations(new ArrayList<>(offspringSequence));
         return offspring;
